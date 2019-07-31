@@ -34,7 +34,7 @@ abstract class AmqpMessagingTest extends TestCase
     public function getRabbitConnectionFactory() : AmqpConnectionFactory
     {
         $config = [
-            "dsn" => "amqp://rabbitmq:5672"
+            "dsn" => "amqp://localhost:5672"
         ];
 
         return new AmqpLibConnection($config);
