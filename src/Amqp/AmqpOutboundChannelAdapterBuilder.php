@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
+use Ecotone\Messaging\Handler\InterfaceToCall;
 use Interop\Amqp\AmqpConnectionFactory;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Conversion\MediaType;
@@ -105,6 +106,14 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
     public static function createForDefaultExchange(string $amqpConnectionFactoryReferenceName): self
     {
         return new self("", $amqpConnectionFactoryReferenceName);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function resolveRelatedInterfaces(InterfaceToCallRegistry $interfaceToCallRegistry): iterable
+    {
+        return [];
     }
 
     /**

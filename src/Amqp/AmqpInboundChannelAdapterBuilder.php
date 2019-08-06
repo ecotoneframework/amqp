@@ -114,6 +114,14 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
 //
 //        return $this;
 //    }
+    /**
+     * @inheritDoc
+     */
+    public function resolveRelatedInterfaces(InterfaceToCallRegistry $interfaceToCallRegistry): iterable
+    {
+        return [$interfaceToCallRegistry->getFor(EntrypointGateway::class, 'executeEntrypoint')];
+    }
+
 
     /**
      * @return string
