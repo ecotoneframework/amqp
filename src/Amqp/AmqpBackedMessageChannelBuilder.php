@@ -3,6 +3,8 @@
 
 namespace Ecotone\Amqp;
 
+use Ecotone\Messaging\Handler\InterfaceToCall;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Interop\Amqp\AmqpConnectionFactory;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
@@ -37,23 +39,39 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @var MediaType
      */
     private $defaultConversionMediaType;
+    /**
+     * @var AmqpOutboundChannelAdapterBuilder
+     */
+    private $amqpOutboundChannelAdapter;
 
     /**
      * AmqpBackedMessageChannelBuilder constructor.
      *
      * @param string $channelName
      * @param string $amqpConnectionReferenceName
+     *
+     * @throws InvalidArgumentException
+     * @throws MessagingException
      */
     private function __construct(string $channelName, string $amqpConnectionReferenceName)
     {
         $this->channelName                 = $channelName;
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
+
+        $this->amqpOutboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
+            ->withAutoDeclareOnSend(true)
+            ->withDefaultRoutingKey($this->channelName)
+            ->withHeaderMapper("*")
+            ->withDefaultPersistentMode(true);
     }
 
     /**
      * @param string $channelName
      * @param string $amqpConnectionReferenceName
+     *
      * @return AmqpBackedMessageChannelBuilder
+     * @throws InvalidArgumentException
+     * @throws MessagingException
      */
     public static function create(string $channelName, string $amqpConnectionReferenceName)
     {
@@ -104,6 +122,11 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
         return $this->channelName;
     }
 
+    public function resolveRelatedInterfaces(InterfaceToCallRegistry $interfaceToCallRegistry): iterable
+    {
+        return $this->amqpOutboundChannelAdapter->resolveRelatedInterfaces($interfaceToCallRegistry);
+    }
+
     /**
      * @inheritDoc
      */
@@ -114,18 +137,12 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
         /** @var AmqpConnectionFactory $amqpConnectionFactory */
         $amqpConnectionFactory = $referenceSearchService->get($this->amqpConnectionReferenceName);
 
-        $amqpOutboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
-                                        ->withAutoDeclareOnSend(true)
-                                        ->withDefaultRoutingKey($this->channelName)
-                                        ->withHeaderMapper("*")
-                                        ->withDefaultPersistentMode(true);
-
         if ($this->defaultConversionMediaType) {
             /** @var AmqpOutboundChannelAdapter $amqpOutboundChannelAdapter */
-            $amqpOutboundChannelAdapter = $amqpOutboundChannelAdapter
+            $this->amqpOutboundChannelAdapter = $this->amqpOutboundChannelAdapter
                                             ->withDefaultConversionMediaType($this->defaultConversionMediaType);
         }
-        $amqpOutboundChannelAdapter = $amqpOutboundChannelAdapter
+        $amqpOutboundChannelAdapter = $this->amqpOutboundChannelAdapter
             ->build(InMemoryChannelResolver::createEmpty(), $referenceSearchService);
 
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
