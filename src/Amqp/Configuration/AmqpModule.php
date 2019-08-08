@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp\Configuration;
 
+use Ecotone\Amqp\AmqpAcknowledgeConfirmationInterceptor;
 use Ecotone\Amqp\AmqpAdmin;
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBackendMessageChannelConsumer;
@@ -14,6 +15,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Handler\InterfaceToCall;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 
 /**
@@ -61,6 +63,7 @@ class AmqpModule implements AnnotationModule
             }
         }
 
+        $configuration->registerRelatedInterfaces([InterfaceToCall::create(AmqpAcknowledgeConfirmationInterceptor::class, "ack")]);
         $configuration->registerConsumerFactory(new AmqpBackendMessageChannelConsumer());
         $moduleReferenceSearchService->store(AmqpAdmin::REFERENCE_NAME, AmqpAdmin::createWith(
             $amqpExchanges, $amqpQueues, $amqpBindings
