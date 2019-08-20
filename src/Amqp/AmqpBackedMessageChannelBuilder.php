@@ -23,6 +23,8 @@ use Ecotone\Messaging\Support\InvalidArgumentException;
  */
 class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
 {
+    const PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX = "ecotone.fanout.";
+
     /**
      * @var string
      */
@@ -43,24 +45,35 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @var AmqpOutboundChannelAdapterBuilder
      */
     private $amqpOutboundChannelAdapter;
+    /**
+     * @var bool
+     */
+    private $isPublishSubscribe;
 
     /**
      * AmqpBackedMessageChannelBuilder constructor.
      *
      * @param string $channelName
      * @param string $amqpConnectionReferenceName
+     * @param bool $isPublishSubscribe
      *
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    private function __construct(string $channelName, string $amqpConnectionReferenceName)
+    private function __construct(string $channelName, string $amqpConnectionReferenceName, bool $isPublishSubscribe)
     {
         $this->channelName                 = $channelName;
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
+        $this->isPublishSubscribe = $isPublishSubscribe;
 
-        $this->amqpOutboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
+        if ($this->isPublishSubscribe) {
+            $amqpOutboundChannelAdapterBuilder = AmqpOutboundChannelAdapterBuilder::create(self::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $channelName, $this->amqpConnectionReferenceName);
+        }else {
+            $amqpOutboundChannelAdapterBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
+                                                    ->withDefaultRoutingKey($this->channelName);
+        }
+        $this->amqpOutboundChannelAdapter = $amqpOutboundChannelAdapterBuilder
             ->withAutoDeclareOnSend(true)
-            ->withDefaultRoutingKey($this->channelName)
             ->withHeaderMapper("*")
             ->withDefaultPersistentMode(true);
     }
@@ -73,9 +86,29 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    public static function create(string $channelName, string $amqpConnectionReferenceName)
+    public static function createDirectChannel(string $channelName, string $amqpConnectionReferenceName)
     {
-        return new self($channelName, $amqpConnectionReferenceName);
+        return new self($channelName, $amqpConnectionReferenceName, false);
+    }
+
+    /**
+     * @param string $channelName
+     * @param string $amqpConnectionReferenceName
+     * @return AmqpBackedMessageChannelBuilder
+     * @throws InvalidArgumentException
+     * @throws MessagingException
+     */
+    public static function createPublishSubscribe(string $channelName, string $amqpConnectionReferenceName)
+    {
+        return new self($channelName, $amqpConnectionReferenceName, true);
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPublishSubscribe(): bool
+    {
+        return $this->isPublishSubscribe;
     }
 
     /**
@@ -153,7 +186,8 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
             $this->channelName,
             $this->receiveTimeoutInMilliseconds,
             AmqpAcknowledgementCallback::AUTO_ACK,
-            DefaultHeaderMapper::createAllHeadersMapping()
+            DefaultHeaderMapper::createAllHeadersMapping(),
+            $this->isPublishSubscribe
         );
 
         return new AmqpBackendMessageChannel($inboundChannelAdapter, $amqpOutboundChannelAdapter);

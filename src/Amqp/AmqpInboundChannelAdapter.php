@@ -59,18 +59,23 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
      * @var HeaderMapper
      */
     private $headerMapper;
+    /**
+     * @var bool
+     */
+    private $queueNameWithEndpointId;
 
     /**
      * InboundAmqpEnqueueGateway constructor.
      *
-     * @param AmqpConnectionFactory               $amqpConnectionFactory
+     * @param AmqpConnectionFactory $amqpConnectionFactory
      * @param EntrypointGateway $inboundAmqpGateway
-     * @param AmqpAdmin                           $amqpAdmin
-     * @param bool                                $declareOnStartup
-     * @param string                              $amqpQueueName
-     * @param int                                 $receiveTimeoutInMilliseconds
-     * @param string                              $acknowledgeMode
-     * @param HeaderMapper                        $headerMapper
+     * @param AmqpAdmin $amqpAdmin
+     * @param bool $declareOnStartup
+     * @param string $amqpQueueName
+     * @param int $receiveTimeoutInMilliseconds
+     * @param string $acknowledgeMode
+     * @param HeaderMapper $headerMapper
+     * @param bool $queueNameWithEndpointId
      */
     public function __construct(
         AmqpConnectionFactory $amqpConnectionFactory,
@@ -80,7 +85,8 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
         string $amqpQueueName,
         int $receiveTimeoutInMilliseconds,
         string $acknowledgeMode,
-        HeaderMapper $headerMapper
+        HeaderMapper $headerMapper,
+        bool $queueNameWithEndpointId
     )
     {
         $this->amqpConnectionFactory = $amqpConnectionFactory;
@@ -91,6 +97,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
         $this->receiveTimeoutInMilliseconds = $receiveTimeoutInMilliseconds;
         $this->acknowledgeMode = $acknowledgeMode;
         $this->headerMapper = $headerMapper;
+        $this->queueNameWithEndpointId = $queueNameWithEndpointId;
     }
 
     /**
@@ -98,9 +105,9 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
      */
     private $initialized = false;
     /**
-     * @var AmqpConsumer
+     * @var AmqpConsumer[]
      */
-    private $initializedConsumer;
+    private $initializedConsumer = [];
 
     /**
      * @throws InvalidArgumentException
@@ -108,7 +115,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
      */
     public function execute(): void
     {
-        $message = $this->getMessage();
+        $message = $this->getMessage(null);
 
         if (!$message) {
             return;
@@ -128,19 +135,19 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
     }
 
     /**
+     * @param string|null $endpointId
      * @return Message|null
      * @throws InvalidArgumentException
-     * @throws \Ecotone\Messaging\MessagingException
      */
-    public function getMessage() : ?Message
+    public function getMessage(?string $endpointId) : ?Message
     {
-        if (!$this->initialized) {
+        if (!$this->initialized || !$this->queueNameWithEndpointId) {
             $context = $this->amqpConnectionFactory->createContext();
-            $this->amqpAdmin->declareQueueWithBindings($this->amqpQueueName, $context);
+            $this->amqpAdmin->declareQueueWithBindings($this->getQueueName($endpointId), $context);
             $this->initialized = true;
         }
 
-        $consumer = $this->getConsumer();
+        $consumer = $this->getConsumer($endpointId);
 
         $amqpMessage = $consumer->receive($this->receiveTimeoutInMilliseconds);
 
@@ -182,20 +189,31 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
     }
 
     /**
+     * @param string|null $endpointId
      * @return \Interop\Amqp\AmqpConsumer
      */
-    private function getConsumer() : \Interop\Amqp\AmqpConsumer
+    private function getConsumer(?string $endpointId) : \Interop\Amqp\AmqpConsumer
     {
-        if ($this->initializedConsumer) {
-            return $this->initializedConsumer;
+        $initializedConsumerId = $endpointId ?? 0;
+        if (isset($this->initializedConsumer[$initializedConsumerId])) {
+            return $this->initializedConsumer[$initializedConsumerId];
         }
 
         /** @var AmqpContext $context */
         $context = $this->amqpConnectionFactory->createContext();
 
-        $consumer = $context->createConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->amqpQueueName));
-        $this->initializedConsumer = $consumer;
+        $consumer = $context->createConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
+        $this->initializedConsumer[$initializedConsumerId] = $consumer;
 
         return $consumer;
+    }
+
+    /**
+     * @param string|null $endpointId
+     * @return string
+     */
+    private function getQueueName(?string $endpointId): string
+    {
+        return $this->queueNameWithEndpointId ? $this->amqpQueueName . "." . $endpointId : $this->amqpQueueName;
     }
 }

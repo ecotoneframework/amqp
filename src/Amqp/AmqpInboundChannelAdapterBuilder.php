@@ -3,24 +3,13 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Interop\Amqp\AmqpConnectionFactory;
-use Interop\Amqp\AmqpQueue;
-use Interop\Amqp\Impl\AmqpTopic;
-use Ramsey\Uuid\Uuid;
-use Ecotone\Messaging\Conversion\ConversionService;
-use Ecotone\Messaging\Endpoint\ChannelAdapterConsumerBuilder;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
 use Ecotone\Messaging\Endpoint\EntrypointGateway;
-use Ecotone\Messaging\Endpoint\InboundChannelAdapter\InboundChannelAdapterBuilder;
 use Ecotone\Messaging\Endpoint\InterceptedChannelAdapterBuilder;
-use Ecotone\Messaging\Endpoint\MessageDrivenChannelAdapter\MessageDrivenConsumer;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Endpoint\TaskExecutorChannelAdapter\TaskExecutorChannelAdapter;
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\Gateway\GatewayProxyBuilder;
-use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderBuilder;
-use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
-use Ecotone\Messaging\Handler\InMemoryReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCall;
 use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
@@ -28,6 +17,9 @@ use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInterceptor;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
+use Exception;
+use Interop\Amqp\AmqpConnectionFactory;
+use Ramsey\Uuid\Uuid;
 
 /**
  * Class InboundEnqueueGatewayBuilder
@@ -77,7 +69,7 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
      * @param string $queueName
      * @param string $requestChannelName
      * @param string $amqpConnectionReferenceName
-     * @throws \Exception
+     * @throws Exception
      */
     private function __construct(string $endpointId, string $queueName, string $requestChannelName, string $amqpConnectionReferenceName)
     {
@@ -90,16 +82,13 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
     }
 
     /**
-     * @param string $endpointId
-     * @param string $queueName
-     * @param string $requestChannelName
-     * @param string $amqpConnectionReferenceName
-     * @return AmqpInboundChannelAdapterBuilder
-     * @throws \Exception
+     * @inheritDoc
      */
-    public static function createWith(string $endpointId, string $queueName, string $requestChannelName, string $amqpConnectionReferenceName) : self
+    public function addAroundInterceptor(AroundInterceptorReference $aroundInterceptorReference)
     {
-        return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName);
+        $this->inboundEntrypoint->addAroundInterceptor($aroundInterceptorReference);
+
+        return $this;
     }
 
 //    /**
@@ -114,6 +103,20 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
 //
 //        return $this;
 //    }
+
+    /**
+     * @param string $endpointId
+     * @param string $queueName
+     * @param string $requestChannelName
+     * @param string $amqpConnectionReferenceName
+     * @return AmqpInboundChannelAdapterBuilder
+     * @throws Exception
+     */
+    public static function createWith(string $endpointId, string $queueName, string $requestChannelName, string $amqpConnectionReferenceName): self
+    {
+        return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName);
+    }
+
     /**
      * @inheritDoc
      */
@@ -124,7 +127,6 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
 
         return $resolvedInterfaces;
     }
-
 
     /**
      * @return string
@@ -138,7 +140,7 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
      * @param string $headerMapper
      * @return AmqpInboundChannelAdapterBuilder
      */
-    public function withHeaderMapper(string $headerMapper) : self
+    public function withHeaderMapper(string $headerMapper): self
     {
         $this->headerMapper = DefaultHeaderMapper::createWith(explode(",", $headerMapper), []);
 
@@ -151,7 +153,7 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
      * @param int $timeoutInMilliseconds
      * @return AmqpInboundChannelAdapterBuilder
      */
-    public function withReceiveTimeout(int $timeoutInMilliseconds) : self
+    public function withReceiveTimeout(int $timeoutInMilliseconds): self
     {
         $this->receiveTimeoutInMilliseconds = $timeoutInMilliseconds;
 
@@ -182,16 +184,6 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
     public function addAfterInterceptor(MethodInterceptor $methodInterceptor)
     {
         $this->inboundEntrypoint->addAfterInterceptor($methodInterceptor);
-
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function addAroundInterceptor(AroundInterceptorReference $aroundInterceptorReference)
-    {
-        $this->inboundEntrypoint->addAroundInterceptor($aroundInterceptorReference);
 
         return $this;
     }
@@ -240,6 +232,11 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
         return $this;
     }
 
+    public function __toString()
+    {
+        return "Inbound Amqp Adapter with id " . $this->endpointId;
+    }
+
     /**
      * @inheritDoc
      */
@@ -266,13 +263,9 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
                 $this->queueName,
                 $this->receiveTimeoutInMilliseconds,
                 $this->acknowledgeMode,
-                $this->headerMapper
+                $this->headerMapper,
+                false
             )
         );
-    }
-
-    public function __toString()
-    {
-        return "Inbound Amqp Adapter with id " . $this->endpointId;
     }
 }

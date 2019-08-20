@@ -30,7 +30,7 @@ class AmqpModuleTest extends TestCase
             AmqpAdmin::createWith([], [AmqpQueue::createWith("some")], []),
             $this->prepareConfigurationAndRetrieveAmqpAdmin(
                 [
-                    AmqpBackedMessageChannelBuilder::create("some", "amqpConnection")
+                    AmqpBackedMessageChannelBuilder::createDirectChannel("some", "amqpConnection")
                 ]
             )
         );
@@ -47,6 +47,7 @@ class AmqpModuleTest extends TestCase
             $this->prepareConfigurationAndRetrieveAmqpAdmin([$amqpExchange, $amqpQueue, $amqpBinding])
         );
     }
+
 
     /**
      * @param AnnotationRegistrationService $annotationRegistrationService

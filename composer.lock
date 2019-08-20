@@ -192,16 +192,16 @@
         },
         {
             "name": "ecotone/ecotone",
-            "version": "0.3.0",
+            "version": "0.3.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ecotoneframework/ecotone.git",
-                "reference": "3f23cbe0d68c9f4f2418737897851352d79e3341"
+                "reference": "950370af1d78dcd3675bf6b7c31aa4e2dd919f02"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ecotoneframework/ecotone/zipball/3f23cbe0d68c9f4f2418737897851352d79e3341",
-                "reference": "3f23cbe0d68c9f4f2418737897851352d79e3341",
+                "url": "https://api.github.com/repos/ecotoneframework/ecotone/zipball/950370af1d78dcd3675bf6b7c31aa4e2dd919f02",
+                "reference": "950370af1d78dcd3675bf6b7c31aa4e2dd919f02",
                 "shasum": ""
             },
             "require": {
@@ -257,7 +257,7 @@
                 "query",
                 "spring"
             ],
-            "time": "2019-08-12T13:38:29+00:00"
+            "time": "2019-08-18T14:46:55+00:00"
         },
         {
             "name": "enqueue/amqp-lib",
@@ -717,22 +717,22 @@
         },
         {
             "name": "php-amqplib/php-amqplib",
-            "version": "v2.9.2",
+            "version": "v2.10.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-amqplib/php-amqplib.git",
-                "reference": "76faddcd668dabb8d4f7c00e86b8a9decd781a59"
+                "reference": "04e5366f032906d5f716890427e425e71307d3a8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/76faddcd668dabb8d4f7c00e86b8a9decd781a59",
-                "reference": "76faddcd668dabb8d4f7c00e86b8a9decd781a59",
+                "url": "https://api.github.com/repos/php-amqplib/php-amqplib/zipball/04e5366f032906d5f716890427e425e71307d3a8",
+                "reference": "04e5366f032906d5f716890427e425e71307d3a8",
                 "shasum": ""
             },
             "require": {
                 "ext-bcmath": "*",
                 "ext-sockets": "*",
-                "php": ">=5.4.0"
+                "php": ">=5.6"
             },
             "replace": {
                 "videlalvaro/php-amqplib": "self.version"
@@ -740,14 +740,14 @@
             "require-dev": {
                 "ext-curl": "*",
                 "nategood/httpful": "^0.2.20",
-                "phpdocumentor/phpdocumentor": "^2.9",
-                "phpunit/phpunit": "^4.8",
+                "phpdocumentor/phpdocumentor": "dev-master",
+                "phpunit/phpunit": "^5.7|^6.5|^7.0",
                 "squizlabs/php_codesniffer": "^2.5"
             },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.8-dev"
+                    "dev-master": "2.10-dev"
                 }
             },
             "autoload": {
@@ -787,7 +787,7 @@
                 "queue",
                 "rabbitmq"
             ],
-            "time": "2019-04-24T15:36:21+00:00"
+            "time": "2019-08-08T18:28:18+00:00"
         },
         {
             "name": "psr/cache",
@@ -2197,19 +2197,23 @@
         },
         {
             "name": "netresearch/jsonmapper",
-            "version": "v1.5.2",
+            "version": "v1.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/cweiske/jsonmapper.git",
-                "reference": "caf41ab74ac7252f5f46db6c16ab0a8358e2e55c"
+                "reference": "0d4d1b48d682a93b6bfedf60b88c7750e9cb0b06"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/cweiske/jsonmapper/zipball/caf41ab74ac7252f5f46db6c16ab0a8358e2e55c",
-                "reference": "caf41ab74ac7252f5f46db6c16ab0a8358e2e55c",
+                "url": "https://api.github.com/repos/cweiske/jsonmapper/zipball/0d4d1b48d682a93b6bfedf60b88c7750e9cb0b06",
+                "reference": "0d4d1b48d682a93b6bfedf60b88c7750e9cb0b06",
                 "shasum": ""
             },
             "require": {
+                "ext-json": "*",
+                "ext-pcre": "*",
+                "ext-reflection": "*",
+                "ext-spl": "*",
                 "php": ">=5.6"
             },
             "require-dev": {
@@ -2235,7 +2239,7 @@
                 }
             ],
             "description": "Map nested JSON structures onto PHP classes",
-            "time": "2019-08-04T19:56:28+00:00"
+            "time": "2019-08-15T19:41:25+00:00"
         },
         {
             "name": "phan/phan",

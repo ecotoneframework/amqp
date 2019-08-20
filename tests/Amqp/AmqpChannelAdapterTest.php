@@ -339,47 +339,6 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     /**
      * @throws MessagingException
      */
-    public function test_sending_and_receiving_from_fanout_exchange()
-    {
-        $exchangeName = Uuid::uuid4()->toString();
-        $whiteQueueName = Uuid::uuid4()->toString();
-        $blackQueueName = Uuid::uuid4()->toString();
-        $amqpQueues = [
-            AmqpQueue::createWith($blackQueueName)
-                ->withExclusivity(),
-            AmqpQueue::createWith($whiteQueueName)
-                ->withExclusivity()
-        ];
-        $amqpExchanges = [
-            AmqpExchange::createFanoutExchange($exchangeName)
-                ->withAutoDeletion()
-        ];
-        $amqpBindings = [
-            AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $whiteQueueName),
-            AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $blackQueueName)
-        ];
-        $requestChannelName = "requestChannel";
-        $inboundRequestChannel = QueueChannel::create();
-        $amqpConnectionReferenceName = "connection";
-        $converters = [];
-        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
-        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
-
-
-        $inboundAmqpAdapterForBlack = $this->createAmqpInboundAdapter($blackQueueName, $requestChannelName, $amqpConnectionReferenceName);
-        $inboundAmqpAdapterForWhite = $this->createAmqpInboundAdapter($whiteQueueName, $requestChannelName, $amqpConnectionReferenceName);
-
-        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::create($exchangeName, $amqpConnectionReferenceName)
-            ->withDefaultRoutingKey("white");
-        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, MessageBuilder::withPayload("some")->build());
-
-        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForBlack, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
-        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForWhite, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
-    }
-
-    /**
-     * @throws MessagingException
-     */
     public function test_sending_and_receiving_from_topic_exchange()
     {
         $exchangeName = Uuid::uuid4()->toString();
@@ -500,7 +459,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     {
         $queueName = Uuid::uuid4()->toString();
 
-        $amqpBackedMessageChannel = $this->createAmqpBackendMessageChannel($queueName);
+        $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
         $amqpBackedMessageChannel->send(MessageBuilder::withPayload("some")->build());
 
         /** @var Message $message */
@@ -514,34 +473,13 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     }
 
     /**
-     * @param string $queueName
-     * @return AmqpBackendMessageChannel
-     * @throws MessagingException
-     */
-    private function createAmqpBackendMessageChannel(string $queueName): AmqpBackendMessageChannel
-    {
-        $amqpConnectionReferenceName = "amqpConnectionName";
-        $referenceSearchService = $this->createReferenceSearchService(
-            $amqpConnectionReferenceName,
-            [],
-            [AmqpQueue::createWith($queueName)],
-            [],
-            []
-        );
-
-        return AmqpBackedMessageChannelBuilder::create($queueName, $amqpConnectionReferenceName)
-            ->withReceiveTimeout(1)
-            ->build($referenceSearchService);
-    }
-
-    /**
      * @throws MessagingException
      */
     public function test_not_receiving_message_second_time_when_acked()
     {
         $queueName = Uuid::uuid4()->toString();
 
-        $amqpBackedMessageChannel = $this->createAmqpBackendMessageChannel($queueName);
+        $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
         $amqpBackedMessageChannel->send(MessageBuilder::withPayload("some")->build());
 
         /** @var Message $message */
@@ -561,7 +499,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     {
         $queueName = Uuid::uuid4()->toString();
 
-        $amqpBackedMessageChannel = $this->createAmqpBackendMessageChannel($queueName);
+        $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
         $amqpBackedMessageChannel->send(MessageBuilder::withPayload("some")->build());
 
         /** @var Message $message */
@@ -572,5 +510,124 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
         $acknowledgeCallback->reject();
 
         $this->assertNull($amqpBackedMessageChannel->receive());
+    }
+
+    /**
+     * @throws MessagingException
+     */
+    public function test_sending_and_receiving_from_fanout_exchange()
+    {
+        $exchangeName = Uuid::uuid4()->toString();
+        $whiteQueueName = Uuid::uuid4()->toString();
+        $blackQueueName = Uuid::uuid4()->toString();
+        $amqpQueues = [
+            AmqpQueue::createWith($blackQueueName)
+                ->withExclusivity(),
+            AmqpQueue::createWith($whiteQueueName)
+                ->withExclusivity()
+        ];
+        $amqpExchanges = [
+            AmqpExchange::createFanoutExchange($exchangeName)
+                ->withAutoDeletion()
+        ];
+        $amqpBindings = [
+            AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $whiteQueueName),
+            AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $blackQueueName)
+        ];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = QueueChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $converters = [];
+        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+
+        $inboundAmqpAdapterForBlack = $this->createAmqpInboundAdapter($blackQueueName, $requestChannelName, $amqpConnectionReferenceName);
+        $inboundAmqpAdapterForWhite = $this->createAmqpInboundAdapter($whiteQueueName, $requestChannelName, $amqpConnectionReferenceName);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::create($exchangeName, $amqpConnectionReferenceName);
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, MessageBuilder::withPayload("some")->build());
+
+        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForBlack, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
+        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForWhite, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
+    }
+
+    /**
+     * @throws MessagingException
+     */
+    public function test_receiving_message_second_time_from_second_consumer()
+    {
+        $queueName = Uuid::uuid4()->toString();
+
+        $amqpBackedMessageChannel = $this->createPublishSubscribeAmqpBackendMessageChannel($queueName, ["1", "2"]);
+
+        $amqpBackedMessageChannel->send(MessageBuilder::withPayload("some")->build());
+
+        /** @var Message $message */
+        $message = $amqpBackedMessageChannel->receiveWithEndpointId("1");
+        /** @var AcknowledgementCallback $acknowledgeCallback */
+        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
+        $acknowledgeCallback->accept();
+        $this->assertNull($amqpBackedMessageChannel->receiveWithEndpointId("1"));
+
+        /** @var Message $message */
+        $message = $amqpBackedMessageChannel->receiveWithEndpointId("2");
+        /** @var AcknowledgementCallback $acknowledgeCallback */
+        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
+        $acknowledgeCallback->accept();
+        $this->assertNull($amqpBackedMessageChannel->receiveWithEndpointId("2"));
+    }
+
+    /**
+     * @param string $queueName
+     * @return AmqpBackendMessageChannel
+     * @throws MessagingException
+     */
+    private function createDirectAmqpBackendMessageChannel(string $queueName): AmqpBackendMessageChannel
+    {
+        $amqpConnectionReferenceName = "amqpConnectionName";
+        $referenceSearchService = $this->createReferenceSearchService(
+            $amqpConnectionReferenceName,
+            [],
+            [AmqpQueue::createWith($queueName)],
+            [],
+            []
+        );
+
+        return AmqpBackedMessageChannelBuilder::createDirectChannel($queueName, $amqpConnectionReferenceName)
+            ->withReceiveTimeout(1)
+            ->build($referenceSearchService);
+    }
+
+    /**
+     * @param string $queueName
+     * @param array $endpointIds
+     * @return AmqpBackendMessageChannel
+     * @throws InvalidArgumentException
+     * @throws MessagingException
+     */
+    private function createPublishSubscribeAmqpBackendMessageChannel(string $queueName, array $endpointIds): AmqpBackendMessageChannel
+    {
+        $amqpConnectionReferenceName = "amqpConnectionName";
+        $exchangeName = AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $queueName;
+
+        $queues = [];
+        $bindings = [];
+        foreach ($endpointIds as $endpointId) {
+            $amqpQueueName = $queueName . "." . $endpointId;
+            $queues[] = AmqpQueue::createWith($amqpQueueName);
+            $bindings[] = AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $amqpQueueName);
+        }
+        $referenceSearchService = $this->createReferenceSearchService(
+            $amqpConnectionReferenceName,
+            [AmqpExchange::createFanoutExchange($exchangeName)],
+            $queues,
+            $bindings,
+            []
+        );
+
+        return AmqpBackedMessageChannelBuilder::createPublishSubscribe($queueName, $amqpConnectionReferenceName)
+            ->withReceiveTimeout(1)
+            ->build($referenceSearchService);
     }
 }

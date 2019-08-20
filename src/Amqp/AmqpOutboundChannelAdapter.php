@@ -153,6 +153,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         if (!is_null($routingKey) && $routingKey !== "") {
             $messageToSend->setRoutingKey($routingKey);
         }
+
         $messageToSend->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
         $context->createProducer()->send(new \Interop\Amqp\Impl\AmqpTopic($this->exchangeName), $messageToSend);

@@ -16,6 +16,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCall;
+use Ecotone\Messaging\Handler\MessageHandlerBuilder;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 
 /**
@@ -47,19 +48,37 @@ class AmqpModule implements AnnotationModule
      */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
+        $publishSubscribeExchanges = [];
         $amqpExchanges = [];
         $amqpQueues = [];
         $amqpBindings = [];
 
         foreach ($extensionObjects as $extensionObject) {
             if ($extensionObject instanceof AmqpBackedMessageChannelBuilder) {
-                $amqpQueues[] = AmqpQueue::createWith($extensionObject->getMessageChannelName());
+                if ($extensionObject->isPublishSubscribe()) {
+                    $publishSubscribeExchanges[] = $extensionObject->getMessageChannelName();
+                    $amqpExchanges[] = AmqpExchange::createFanoutExchange(AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName());
+                }else {
+                    $amqpQueues[] = AmqpQueue::createWith($extensionObject->getMessageChannelName());
+                }
             }else if ($extensionObject instanceof AmqpExchange) {
                 $amqpExchanges[] = $extensionObject;
             }else if ($extensionObject instanceof AmqpQueue) {
                 $amqpQueues[] = $extensionObject;
             }else if ($extensionObject instanceof AmqpBinding) {
                 $amqpBindings[] = $extensionObject;
+            }
+        }
+        foreach ($extensionObjects as $extensionObject) {
+            if ($extensionObject instanceof MessageHandlerBuilder) {
+                if (in_array($extensionObject->getInputMessageChannelName(), $publishSubscribeExchanges)) {
+                    $queueName = $extensionObject->getInputMessageChannelName() . "." . $extensionObject->getEndpointId();
+                    $amqpQueues[] = AmqpQueue::createWith($queueName);
+                    $amqpBindings[] = AmqpBinding::createFromNamesWithoutRoutingKey(
+                        AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName(),
+                        $queueName
+                    );
+                }
             }
         }
 
@@ -79,7 +98,8 @@ class AmqpModule implements AnnotationModule
             $extensionObject instanceof AmqpBackedMessageChannelBuilder
             || $extensionObject instanceof AmqpExchange
             || $extensionObject instanceof AmqpQueue
-            || $extensionObject instanceof AmqpBinding;
+            || $extensionObject instanceof AmqpBinding
+            || $extensionObject instanceof MessageHandlerBuilder;
     }
 
     /**

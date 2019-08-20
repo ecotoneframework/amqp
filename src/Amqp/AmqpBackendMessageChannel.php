@@ -3,6 +3,7 @@
 
 namespace Ecotone\Amqp;
 
+use Ecotone\Messaging\ContextualPollableChannel;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\PollableChannel;
 
@@ -11,7 +12,7 @@ use Ecotone\Messaging\PollableChannel;
  * @package Ecotone\Amqp
  * @author  Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpBackendMessageChannel implements PollableChannel
+class AmqpBackendMessageChannel implements ContextualPollableChannel
 {
     /**
      * @var AmqpInboundChannelAdapter
@@ -47,7 +48,12 @@ class AmqpBackendMessageChannel implements PollableChannel
      */
     public function receive(): ?Message
     {
-        return $this->amqpInboundChannelAdapter->getMessage();
+        return $this->amqpInboundChannelAdapter->getMessage(null);
+    }
+
+    public function receiveWithEndpointId(string $endpointId): ?Message
+    {
+        return $this->amqpInboundChannelAdapter->getMessage($endpointId);
     }
 
     /**
@@ -55,6 +61,14 @@ class AmqpBackendMessageChannel implements PollableChannel
      */
     public function receiveWithTimeout(int $timeoutInMilliseconds): ?Message
     {
-        return $this->amqpInboundChannelAdapter->getMessage();
+        return $this->amqpInboundChannelAdapter->getMessage(null);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function receiveWithEndpointIdAndTimeout(string $endpointId, int $timeoutInMilliseconds): ?Message
+    {
+        return $this->amqpInboundChannelAdapter->getMessage($endpointId);
     }
 }
