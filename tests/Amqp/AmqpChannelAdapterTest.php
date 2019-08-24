@@ -339,6 +339,76 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     /**
      * @throws MessagingException
      */
+    public function test_sending_and_receiving_with_routing_key_in_message()
+    {
+        $blackQueueName = Uuid::uuid4()->toString();
+        $amqpQueues = [
+            AmqpQueue::createWith($blackQueueName)
+                ->withExclusivity()
+        ];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = QueueChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $converters = [];
+        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, [], $amqpQueues, [], $converters);
+
+
+        $inboundAmqpAdapterForBlack = $this->createAmqpInboundAdapter($blackQueueName, $requestChannelName, $amqpConnectionReferenceName);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::create("", $amqpConnectionReferenceName)
+                                        ->withRoutingKeyFromHeader("routingKey");
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService,
+            MessageBuilder::withPayload("some")
+                ->setHeader('routingKey', $blackQueueName)
+                ->build()
+        );
+
+        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForBlack, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
+    }
+
+    /**
+     * @throws MessagingException
+     */
+    public function test_sending_and_receiving_with_exchange_in_message()
+    {
+        $exchangeName = Uuid::uuid4()->toString();
+        $blackQueueName = Uuid::uuid4()->toString();
+        $amqpQueues = [
+            AmqpQueue::createWith($blackQueueName)
+                ->withExclusivity()
+        ];
+        $amqpExchanges = [
+            AmqpExchange::createFanoutExchange($exchangeName)
+                ->withAutoDeletion()
+        ];
+        $amqpBindings = [
+            AmqpBinding::createFromNames($exchangeName, $blackQueueName, null)
+        ];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = QueueChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $converters = [];
+        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+
+        $inboundAmqpAdapterForBlack = $this->createAmqpInboundAdapter($blackQueueName, $requestChannelName, $amqpConnectionReferenceName);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::create("", $amqpConnectionReferenceName)
+            ->withExchangeFromHeader("exchangeKey");
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService,
+            MessageBuilder::withPayload("some")
+                ->setHeader('exchangeKey', $exchangeName)
+                ->build()
+        );
+
+        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapterForBlack, $inboundRequestChannel, $inMemoryChannelResolver, $referenceSearchService));
+    }
+
+    /**
+     * @throws MessagingException
+     */
     public function test_sending_and_receiving_from_topic_exchange()
     {
         $exchangeName = Uuid::uuid4()->toString();

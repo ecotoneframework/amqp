@@ -55,7 +55,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
     /**
      * @var string|null
      */
-    private $routingKeyHeaderName;
+    private $routingKeyFromHeaderName;
     /**
      * @var ConversionService
      */
@@ -64,22 +64,27 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      * @var MediaType
      */
     private $defaultConversionMediaType;
+    /**
+     * @var string|null
+     */
+    private $exchangeFromHeaderName;
 
     /**
      * OutboundAmqpGateway constructor.
      *
      * @param AmqpConnectionFactory $amqpConnectionFactory
-     * @param AmqpAdmin             $amqpAdmin
-     * @param string                $exchangeName
-     * @param string|null           $routingKey
-     * @param string|null           $routingKeyHeaderName
-     * @param bool                  $defaultPersistentDelivery
-     * @param bool                  $autoDeclare
-     * @param HeaderMapper          $headerMapper
-     * @param ConversionService     $conversionService
-     * @param MediaType             $defaultConversionMediaType
+     * @param AmqpAdmin $amqpAdmin
+     * @param string $exchangeName
+     * @param string|null $routingKey
+     * @param string|null $routingKeyFromHeaderName
+     * @param string|null $exchangeFromHeaderName
+     * @param bool $defaultPersistentDelivery
+     * @param bool $autoDeclare
+     * @param HeaderMapper $headerMapper
+     * @param ConversionService $conversionService
+     * @param MediaType $defaultConversionMediaType
      */
-    public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType)
+    public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType)
     {
         $this->amqpConnectionFactory     = $amqpConnectionFactory;
         $this->routingKey                = $routingKey;
@@ -88,9 +93,10 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $this->defaultPersistentDelivery = $defaultPersistentDelivery;
         $this->headerMapper              = $headerMapper;
         $this->autoDeclare               = $autoDeclare;
-        $this->routingKeyHeaderName      = $routingKeyHeaderName;
+        $this->routingKeyFromHeaderName      = $routingKeyFromHeaderName;
         $this->conversionService = $conversionService;
         $this->defaultConversionMediaType = $defaultConversionMediaType;
+        $this->exchangeFromHeaderName = $exchangeFromHeaderName;
     }
 
     /**
@@ -101,8 +107,12 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         /** @var AmqpContext $context */
         $context = $this->amqpConnectionFactory->createContext();
 
+        $exchangeName = $this->exchangeName;
+        if ($this->exchangeFromHeaderName) {
+            $exchangeName = $message->getHeaders()->containsKey($this->exchangeFromHeaderName) ? $message->getHeaders()->get($this->exchangeFromHeaderName) : $this->exchangeName;
+        }
         if ($this->autoDeclare) {
-            $this->amqpAdmin->declareExchangeWithQueuesAndBindings($this->exchangeName, $context);
+            $this->amqpAdmin->declareExchangeWithQueuesAndBindings($exchangeName, $context);
         }
 
         $enqueueMessagePayload = $message->getPayload();
@@ -140,8 +150,8 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $messageToSend = new \Interop\Amqp\Impl\AmqpMessage($enqueueMessagePayload, $applicationHeaders, []);
 
 
-        if ($this->routingKeyHeaderName) {
-            $routingKey = $message->getHeaders()->containsKey($this->routingKeyHeaderName) ? $message->getHeaders()->get($this->routingKeyHeaderName) : $this->routingKey;
+        if ($this->routingKeyFromHeaderName) {
+            $routingKey = $message->getHeaders()->containsKey($this->routingKeyFromHeaderName) ? $message->getHeaders()->get($this->routingKeyFromHeaderName) : $this->routingKey;
         }else {
             $routingKey = $this->routingKey;
         }
@@ -156,7 +166,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $messageToSend->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-        $context->createProducer()->send(new \Interop\Amqp\Impl\AmqpTopic($this->exchangeName), $messageToSend);
+        $context->createProducer()->send(new \Interop\Amqp\Impl\AmqpTopic($exchangeName), $messageToSend);
         $context->close();
     }
 }

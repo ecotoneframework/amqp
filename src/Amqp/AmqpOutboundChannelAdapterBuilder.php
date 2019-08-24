@@ -48,6 +48,10 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
     /**
      * @var string
      */
+    private $exchangeFromHeader;
+    /**
+     * @var string
+     */
     private $exchangeName;
     /**
      * @var bool
@@ -155,6 +159,18 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
     }
 
     /**
+     * @param string $exchangeName
+     *
+     * @return AmqpOutboundChannelAdapterBuilder
+     */
+    public function withExchangeFromHeader(string $exchangeName) : self
+    {
+        $this->exchangeFromHeader = $exchangeName;
+
+        return $this;
+    }
+
+    /**
      * @param bool $isPersistent
      *
      * @return AmqpOutboundChannelAdapterBuilder
@@ -207,6 +223,7 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
             $this->exchangeName,
             $this->routingKey,
             $this->routingKeyFromHeader,
+            $this->exchangeFromHeader,
             $this->defaultPersistentDelivery,
             $this->autoDeclare,
             $this->headerMapper,

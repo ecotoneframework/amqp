@@ -1,8 +1,7 @@
 <?php
 
-namespace Test\Ecotone\Amqp;
+namespace Test\Ecotone\Amqp\Configuration;
 
-use PHPUnit\Framework\TestCase;
 use Ecotone\Amqp\AmqpAdmin;
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBinding;
@@ -16,6 +15,7 @@ use Ecotone\Messaging\Config\InMemoryModuleMessaging;
 use Ecotone\Messaging\Config\MessagingSystemConfiguration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\MessagingException;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Class AmqpModuleTest
