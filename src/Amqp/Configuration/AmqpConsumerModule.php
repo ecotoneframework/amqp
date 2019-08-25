@@ -6,6 +6,7 @@ namespace Ecotone\Amqp\Configuration;
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
 use Ecotone\Amqp\Annotation\AmqpEndpoint;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
+use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ParameterConverterAnnotationFactory;
@@ -21,6 +22,7 @@ use Ramsey\Uuid\Uuid;
  * Class AmqpConsumerModule
  * @package Ecotone\Amqp\Configuration
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
+ * @ModuleAnnotation()
  */
 class AmqpConsumerModule implements AnnotationModule
 {

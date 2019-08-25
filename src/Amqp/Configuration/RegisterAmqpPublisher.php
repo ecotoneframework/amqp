@@ -4,6 +4,7 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpPublisher;
+use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Conversion\MediaType;
 use Exception;
 
@@ -11,6 +12,7 @@ use Exception;
  * Class RegisterAmqpPublisher
  * @package Ecotone\Amqp\Configuration
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
+ * @ModuleAnnotation()
  */
 class RegisterAmqpPublisher
 {
