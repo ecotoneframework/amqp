@@ -9,6 +9,7 @@ use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
 use Ecotone\Amqp\AmqpPublisher;
 use Ecotone\Amqp\Configuration\AmqpPublisherModule;
 use Ecotone\Amqp\Configuration\RegisterAmqpPublisher;
+use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
@@ -19,6 +20,7 @@ use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\Gateway\GatewayProxyBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeadersBuilder;
+use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderValueBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
 use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagingException;
@@ -38,29 +40,42 @@ class AmqpPublisherModuleTest extends TestCase
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE),
                             GatewayHeaderBuilder::create("routing", "amqpSendRouting")
-                        ]),
+                        ])
+                )
+                ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(AmqpPublisher::class, AmqpPublisher::class, "sendWithMetadata", AmqpPublisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
                             GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE),
                             GatewayHeaderBuilder::create("routing", "amqpSendRouting"),
-                        ]),
+                        ])
+                )
+                ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(AmqpPublisher::class, AmqpPublisher::class, "convertAndSend", AmqpPublisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderBuilder::create("routing", "amqpSendRouting")
-                        ]),
+                            GatewayHeaderBuilder::create("routing", "amqpSendRouting"),
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP_OBJECT)
+                        ])
+                )
+                ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(AmqpPublisher::class, AmqpPublisher::class, "convertAndSendWithMetadata", AmqpPublisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderBuilder::create("routing", "amqpSendRouting")
-                        ]),
+                            GatewayHeaderBuilder::create("routing", "amqpSendRouting"),
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP_OBJECT)
+                        ])
+                )
+                ->registerMessageHandler(
                     AmqpOutboundChannelAdapterBuilder::create("exchangeName", "amqpConnection")
+                        ->withEndpointId(AmqpPublisher::class . ".handler")
+                        ->withInputChannelName(AmqpPublisher::class)
                         ->withRoutingKeyFromHeader("amqpSendRouting")
                         ->withDefaultPersistentMode(true)
-                ),
+                )
+                ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(AmqpPublisher::class)),
             $this->prepareConfiguration(
                 [
                     RegisterAmqpPublisher::create("amqpConnection", AmqpPublisher::class, "exchangeName", MediaType::APPLICATION_JSON)
