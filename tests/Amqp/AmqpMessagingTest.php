@@ -14,7 +14,7 @@ use Ecotone\Amqp\CachedAmqpConnectionFactory;
  */
 abstract class AmqpMessagingTest extends TestCase
 {
-    const RABBITMQ_HOST = 'rabbitmq';
+    const RABBITMQ_HOST = 'localhost';
 
     const RABBITMQ_USER = 'guest';
 

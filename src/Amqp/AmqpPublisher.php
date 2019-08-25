@@ -12,37 +12,36 @@ use Ecotone\Messaging\Conversion\MediaType;
  */
 interface AmqpPublisher
 {
-    /**
-     * @param string $data
-     * @param string $sourceMediaType
-     * @param string $exchange
-     * @param string $routing
-     */
-    public function send(string $data, string $sourceMediaType = MediaType::TEXT_PLAIN, string $exchange = "", string $routing = "") : void;
+//    @TODO add @AmqpConsumer for inbound channel adapter
+//    remove exchange from AmqpPublisher API and add it to RegisterAmqpPublisher
 
     /**
      * @param string $data
-     * @param array $metadata
      * @param string $sourceMediaType
-     * @param string $exchange
      * @param string $routing
      */
-    public function sendWithMetadata(string $data, string $sourceMediaType = MediaType::TEXT_PLAIN, array $metadata = [], string $exchange = "", string $routing = "") : void;
+    public function send(string $data, string $sourceMediaType = MediaType::TEXT_PLAIN, string $routing = "") : void;
+
+    /**
+     * @param string $data
+     * @param string[] $metadata
+     * @param string $sourceMediaType
+     * @param string $routing
+     */
+    public function sendWithMetadata(string $data, string $sourceMediaType = MediaType::TEXT_PLAIN, array $metadata = [], string $routing = "") : void;
 
     /**
      * @param $data
-     * @param string $exchange
      * @param string $routing
-     * @return mixed
+     * @return void
      */
-    public function convertAndSend($data, string $exchange = "", string $routing = "") : void;
+    public function convertAndSend(object $data, string $routing = "") : void;
 
     /**
      * @param $data
-     * @param array $metadata
-     * @param string $exchange
+     * @param string[] $metadata
      * @param string $routing
-     * @return mixed
+     * @return void
      */
-    public function convertAndSendWithMetadata($data, array $metadata = [], string $exchange = "", string $routing = "") : void;
+    public function convertAndSendWithMetadata(object $data, array $metadata = [], string $routing = "") : void;
 }
