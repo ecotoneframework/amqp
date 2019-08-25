@@ -86,7 +86,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    public static function createDirectChannel(string $channelName, string $amqpConnectionReferenceName)
+    public static function createDirectChannel(string $channelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class)
     {
         return new self($channelName, $amqpConnectionReferenceName, false);
     }
@@ -98,7 +98,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    public static function createPublishSubscribe(string $channelName, string $amqpConnectionReferenceName)
+    public static function createPublishSubscribe(string $channelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class)
     {
         return new self($channelName, $amqpConnectionReferenceName, true);
     }

@@ -6,6 +6,7 @@ namespace Ecotone\Amqp\Configuration;
 use Ecotone\Amqp\AmqpPublisher;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Conversion\MediaType;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Exception;
 
 /**
@@ -31,6 +32,10 @@ class RegisterAmqpPublisher
      * @var string
      */
     private $exchangeName;
+    /**
+     * @var bool
+     */
+    private $autoDeclareQueueOnSend = false;
 
     /**
      * RegisterAmqpPublisher constructor.
@@ -48,13 +53,13 @@ class RegisterAmqpPublisher
     }
 
     /**
+     * @param string $publisherReferenceName
      * @param string $amqpConnectionReference
      * @param string $exchangeName
      * @param string $outputDefaultConversionMediaType
-     * @param string $publisherReferenceName
      * @return RegisterAmqpPublisher
      */
-    public static function create(string $amqpConnectionReference, string $publisherReferenceName, string $exchangeName = "", string $outputDefaultConversionMediaType = MediaType::TEXT_PLAIN): self
+    public static function create(string $publisherReferenceName, string $amqpConnectionReference = AmqpConnectionFactory::class, string $exchangeName = "", string $outputDefaultConversionMediaType = MediaType::TEXT_PLAIN): self
     {
         return new self($amqpConnectionReference, $exchangeName, $outputDefaultConversionMediaType, $publisherReferenceName);
     }
@@ -65,6 +70,24 @@ class RegisterAmqpPublisher
     public function getAmqpConnectionReference(): string
     {
         return $this->amqpConnectionReference;
+    }
+
+    /**
+     * @param bool $autoDeclareQueueOnSend
+     * @return RegisterAmqpPublisher
+     */
+    public function withAutoDeclareQueueOnSend(bool $autoDeclareQueueOnSend): RegisterAmqpPublisher
+    {
+        $this->autoDeclareQueueOnSend = $autoDeclareQueueOnSend;
+        return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isAutoDeclareQueueOnSend(): bool
+    {
+        return $this->autoDeclareQueueOnSend;
     }
 
     /**

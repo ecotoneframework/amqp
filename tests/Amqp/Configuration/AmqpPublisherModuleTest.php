@@ -74,11 +74,13 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withInputChannelName(AmqpPublisher::class)
                         ->withRoutingKeyFromHeader("amqpSendRouting")
                         ->withDefaultPersistentMode(true)
+                        ->withAutoDeclareOnSend(true)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(AmqpPublisher::class)),
             $this->prepareConfiguration(
                 [
-                    RegisterAmqpPublisher::create("amqpConnection", AmqpPublisher::class, "exchangeName", MediaType::APPLICATION_JSON)
+                    RegisterAmqpPublisher::create(AmqpPublisher::class, "amqpConnection", "exchangeName", MediaType::APPLICATION_JSON)
+                        ->withAutoDeclareQueueOnSend(true)
                 ]
             )
         );
@@ -129,8 +131,8 @@ class AmqpPublisherModuleTest extends TestCase
 
         $this->prepareConfiguration(
             [
-                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON, AmqpPublisher::class),
-                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON, AmqpPublisher::class)
+                RegisterAmqpPublisher::create("test", "amqpConnection", MediaType::APPLICATION_JSON, AmqpPublisher::class),
+                RegisterAmqpPublisher::create("test", "amqpConnection", MediaType::APPLICATION_JSON, AmqpPublisher::class)
             ]
         );
     }

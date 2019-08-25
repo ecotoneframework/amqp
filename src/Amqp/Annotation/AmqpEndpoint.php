@@ -5,7 +5,7 @@ namespace Ecotone\Amqp\Annotation;
 
 use Doctrine\Common\Annotations\Annotation\Required;
 use Ecotone\Messaging\Annotation\EndpointAnnotation;
-use Ecotone\Messaging\Annotation\Poller;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
  * Class AmqpConsumer
@@ -19,12 +19,11 @@ class AmqpEndpoint extends EndpointAnnotation
      * @var string
      * @Required()
      */
-    public $amqpConnectionReferenceName;
+    public $queueName;
     /**
      * @var string
-     * @Required()
      */
-    public $queueName;
+    public $amqpConnectionReferenceName = AmqpConnectionFactory::class;
     /**
      * @var array
      */

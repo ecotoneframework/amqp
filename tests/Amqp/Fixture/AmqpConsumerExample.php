@@ -21,6 +21,7 @@ class AmqpConsumerExample
      *     endpointId="endpointId",
      *     amqpConnectionReferenceName="amqpConnection",
      *     queueName="input",
+     *     autoDeclareQueueOnSend=true,
      *     parameterConverters={
      *          @Payload(parameterName="object")
      *     }
