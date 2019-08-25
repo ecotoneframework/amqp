@@ -13,7 +13,7 @@ use Ecotone\Messaging\Annotation\Poller;
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  * @Annotation
  */
-class AmqpConsumer extends EndpointAnnotation
+class AmqpEndpoint extends EndpointAnnotation
 {
     /**
      * @var string

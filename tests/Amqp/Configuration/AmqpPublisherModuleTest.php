@@ -63,7 +63,7 @@ class AmqpPublisherModuleTest extends TestCase
                 ),
             $this->prepareConfiguration(
                 [
-                    RegisterAmqpPublisher::create("amqpConnection", "exchangeName", MediaType::APPLICATION_JSON)
+                    RegisterAmqpPublisher::create("amqpConnection", AmqpPublisher::class, "exchangeName", MediaType::APPLICATION_JSON)
                 ]
             )
         );
@@ -114,8 +114,8 @@ class AmqpPublisherModuleTest extends TestCase
 
         $this->prepareConfiguration(
             [
-                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON),
-                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON)
+                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON, AmqpPublisher::class),
+                RegisterAmqpPublisher::create("amqpConnection", "test", MediaType::APPLICATION_JSON, AmqpPublisher::class)
             ]
         );
     }

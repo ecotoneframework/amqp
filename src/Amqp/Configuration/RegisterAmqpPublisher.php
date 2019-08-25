@@ -4,6 +4,7 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpPublisher;
+use Ecotone\Messaging\Conversion\MediaType;
 use Exception;
 
 /**
@@ -49,21 +50,10 @@ class RegisterAmqpPublisher
      * @param string $amqpConnectionReference
      * @param string $exchangeName
      * @param string $outputDefaultConversionMediaType
-     * @return RegisterAmqpPublisher
-     */
-    public static function create(string $amqpConnectionReference, string $exchangeName, string $outputDefaultConversionMediaType): self
-    {
-        return new self($amqpConnectionReference, $exchangeName, $outputDefaultConversionMediaType, AmqpPublisher::class);
-    }
-
-    /**
-     * @param string $amqpConnectionReference
-     * @param string $exchangeName
-     * @param string $outputDefaultConversionMediaType
      * @param string $publisherReferenceName
      * @return RegisterAmqpPublisher
      */
-    public static function createWithReferenceName(string $amqpConnectionReference, string $exchangeName, string $outputDefaultConversionMediaType, string $publisherReferenceName): self
+    public static function create(string $amqpConnectionReference, string $publisherReferenceName, string $exchangeName = "", string $outputDefaultConversionMediaType = MediaType::TEXT_PLAIN): self
     {
         return new self($amqpConnectionReference, $exchangeName, $outputDefaultConversionMediaType, $publisherReferenceName);
     }

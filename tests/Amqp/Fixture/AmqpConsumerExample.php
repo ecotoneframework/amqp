@@ -3,10 +3,9 @@
 
 namespace Test\Ecotone\Amqp\Fixture;
 
-use Ecotone\Amqp\Annotation\AmqpConsumer;
+use Ecotone\Amqp\Annotation\AmqpEndpoint;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\Parameter\Payload;
-use Ecotone\Messaging\Transaction\Transactional;
 use stdClass;
 
 /**
@@ -18,7 +17,7 @@ use stdClass;
 class AmqpConsumerExample
 {
     /**
-     * @AmqpConsumer(
+     * @AmqpEndpoint(
      *     endpointId="endpointId",
      *     amqpConnectionReferenceName="amqpConnection",
      *     queueName="input",
