@@ -12,7 +12,6 @@ use Exception;
  * Class RegisterAmqpPublisher
  * @package Ecotone\Amqp\Configuration
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
- * @ModuleAnnotation()
  */
 class RegisterAmqpPublisher
 {
