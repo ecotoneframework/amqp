@@ -3,6 +3,8 @@
 
 namespace Test\Ecotone\Amqp\Fixture;
 
+use Ecotone\Messaging\SubscribableChannel;
+
 /**
  * Interface AmqpConfigurationExample
  * @package Test\Ecotone\Amqp\Fixture
@@ -10,5 +12,8 @@ namespace Test\Ecotone\Amqp\Fixture;
  */
 interface AmqpConfigurationExample
 {
-
+    /**
+     * @return SubscribableChannel
+     */
+    public function test() : SubscribableChannel;
 }

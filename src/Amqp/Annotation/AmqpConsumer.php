@@ -4,6 +4,8 @@
 namespace Ecotone\Amqp\Annotation;
 
 use Doctrine\Common\Annotations\Annotation\Required;
+use Ecotone\Messaging\Annotation\EndpointAnnotation;
+use Ecotone\Messaging\Annotation\Poller;
 
 /**
  * Class AmqpConsumer
@@ -11,7 +13,7 @@ use Doctrine\Common\Annotations\Annotation\Required;
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  * @Annotation
  */
-class AmqpConsumer
+class AmqpConsumer extends EndpointAnnotation
 {
     /**
      * @var string

@@ -34,7 +34,7 @@ class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
     {
         $pollingConsumerBuilder = new PollingConsumerBuilder();
 
-        $pollingConsumerBuilder->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor());
+        $pollingConsumerBuilder->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor($messageHandlerBuilder->getEndpointId()));
 
         return $pollingConsumerBuilder->build($channelResolver, $referenceSearchService, $messageHandlerBuilder, $pollingMetadata);
     }

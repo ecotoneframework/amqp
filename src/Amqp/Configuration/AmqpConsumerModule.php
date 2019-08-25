@@ -63,7 +63,7 @@ class AmqpConsumerModule implements AnnotationModule
             /** @var AmqpConsumer $amqpConsumerAnnotation */
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
-            $endpointId = Uuid::uuid4()->toString();
+            $endpointId = $amqpConsumerAnnotation->endpointId;
             $amqpInboundChannelAdapter[] = AmqpInboundChannelAdapterBuilder::createWith(
                 $endpointId,
                 $amqpConsumerAnnotation->queueName,
@@ -72,6 +72,7 @@ class AmqpConsumerModule implements AnnotationModule
             );
 
             $serviceActivators[] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
+                                    ->withEndpointId($endpointId . ".target")
                                     ->withInputChannelName($endpointId)
                                     ->withMethodParameterConverters($annotationParameterBuilder->createParameterConverters(
                                         InterfaceToCall::create($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
@@ -96,7 +97,7 @@ class AmqpConsumerModule implements AnnotationModule
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         foreach ($this->amqpInboundChannelAdapters as $amqpInboundChannelAdapter) {
-            $configuration->registerMessageHandler($amqpInboundChannelAdapter);
+            $configuration->registerConsumer($amqpInboundChannelAdapter);
         }
         foreach ($this->serviceActivators as $serviceActivator) {
             $configuration->registerMessageHandler($serviceActivator);

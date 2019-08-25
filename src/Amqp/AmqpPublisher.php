@@ -12,9 +12,6 @@ use Ecotone\Messaging\Conversion\MediaType;
  */
 interface AmqpPublisher
 {
-//    @TODO add @AmqpConsumer for inbound channel adapter
-//    remove exchange from AmqpPublisher API and add it to RegisterAmqpPublisher
-
     /**
      * @param string $data
      * @param string $sourceMediaType

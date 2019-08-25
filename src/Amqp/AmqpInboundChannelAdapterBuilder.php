@@ -77,8 +77,8 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
         $this->queueName = $queueName;
         $this->headerMapper = DefaultHeaderMapper::createNoMapping();
-        $this->inboundEntrypoint = GatewayProxyBuilder::create(Uuid::uuid4()->toString(), EntrypointGateway::class, "executeEntrypoint", $requestChannelName);
-        $this->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor());
+        $this->inboundEntrypoint = GatewayProxyBuilder::create($endpointId, EntrypointGateway::class, "executeEntrypoint", $requestChannelName);
+        $this->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor($endpointId));
     }
 
     /**

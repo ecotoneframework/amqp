@@ -23,9 +23,9 @@ class AmqpAcknowledgeConfirmationInterceptor
 {
     const PRECEDENCE = ErrorChannelInterceptor::PRECEDENCE - 1;
 
-    public static function createAroundInterceptor() : AroundInterceptorReference
+    public static function createAroundInterceptor(string $interceptorName) : AroundInterceptorReference
     {
-        return AroundInterceptorReference::createWithDirectObject(Uuid::uuid4()->toString(), new self(), "ack", self::PRECEDENCE, "");
+        return AroundInterceptorReference::createWithDirectObject($interceptorName, new self(), "ack", self::PRECEDENCE, "");
     }
 
     /**
