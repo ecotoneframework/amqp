@@ -17,9 +17,8 @@ use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInterceptor;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Exception;
-use Interop\Amqp\AmqpConnectionFactory;
-use Ramsey\Uuid\Uuid;
 
 /**
  * Class InboundEnqueueGatewayBuilder
@@ -112,7 +111,7 @@ class AmqpInboundChannelAdapterBuilder extends InterceptedChannelAdapterBuilder
      * @return AmqpInboundChannelAdapterBuilder
      * @throws Exception
      */
-    public static function createWith(string $endpointId, string $queueName, string $requestChannelName, string $amqpConnectionReferenceName): self
+    public static function createWith(string $endpointId, string $queueName, string $requestChannelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class): self
     {
         return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName);
     }

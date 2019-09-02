@@ -3,18 +3,17 @@
 
 namespace Ecotone\Amqp;
 
-use Ecotone\Messaging\Handler\InterfaceToCall;
-use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
-use Interop\Amqp\AmqpConnectionFactory;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\NullEntrypointGateway;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageChannel;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
  * Class AmqpBackedMessageChannelBuilder
@@ -62,15 +61,15 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      */
     private function __construct(string $channelName, string $amqpConnectionReferenceName, bool $isPublishSubscribe)
     {
-        $this->channelName                 = $channelName;
+        $this->channelName = $channelName;
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
         $this->isPublishSubscribe = $isPublishSubscribe;
 
         if ($this->isPublishSubscribe) {
             $amqpOutboundChannelAdapterBuilder = AmqpOutboundChannelAdapterBuilder::create(self::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $channelName, $this->amqpConnectionReferenceName);
-        }else {
+        } else {
             $amqpOutboundChannelAdapterBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
-                                                    ->withDefaultRoutingKey($this->channelName);
+                ->withDefaultRoutingKey($this->channelName);
         }
         $this->amqpOutboundChannelAdapter = $amqpOutboundChannelAdapterBuilder
             ->withAutoDeclareOnSend(true)
@@ -118,7 +117,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      *
      * @return AmqpBackedMessageChannelBuilder
      */
-    public function withReceiveTimeout(int $timeoutInMilliseconds) : self
+    public function withReceiveTimeout(int $timeoutInMilliseconds): self
     {
         $this->receiveTimeoutInMilliseconds = $timeoutInMilliseconds;
 
@@ -140,7 +139,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    public function withDefaultConversionMediaType(string $mediaType) : self
+    public function withDefaultConversionMediaType(string $mediaType): self
     {
         $this->defaultConversionMediaType = MediaType::parseMediaType($mediaType);
 
@@ -173,7 +172,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
         if ($this->defaultConversionMediaType) {
             /** @var AmqpOutboundChannelAdapter $amqpOutboundChannelAdapter */
             $this->amqpOutboundChannelAdapter = $this->amqpOutboundChannelAdapter
-                                            ->withDefaultConversionMediaType($this->defaultConversionMediaType);
+                ->withDefaultConversionMediaType($this->defaultConversionMediaType);
         }
         $amqpOutboundChannelAdapter = $this->amqpOutboundChannelAdapter
             ->build(InMemoryChannelResolver::createEmpty(), $referenceSearchService);

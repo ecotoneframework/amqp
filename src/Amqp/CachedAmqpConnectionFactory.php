@@ -2,7 +2,7 @@
 
 namespace Ecotone\Amqp;
 
-use Interop\Amqp\AmqpConnectionFactory;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Interop\Queue\Context;
 
 /**
@@ -10,7 +10,7 @@ use Interop\Queue\Context;
  * @package Ecotone\Amqp
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class CachedAmqpConnectionFactory implements AmqpConnectionFactory
+class CachedAmqpConnectionFactory extends AmqpConnectionFactory
 {
     /**
      * @var AmqpConnectionFactory

@@ -3,8 +3,6 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Ecotone\Messaging\Handler\InterfaceToCall;
-use Interop\Amqp\AmqpConnectionFactory;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\ChannelResolver;
@@ -14,6 +12,9 @@ use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
 use Ecotone\Messaging\MessageHandler;
+use Ecotone\Messaging\MessagingException;
+use Ecotone\Messaging\Support\InvalidArgumentException;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
  * Class OutboundAmqpGatewayBuilder
@@ -23,7 +24,7 @@ use Ecotone\Messaging\MessageHandler;
 class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
 {
     private const DEFAULT_PERSISTENT_MODE = true;
-    const         DEFAULT_AUTO_DECLARE    = false;
+    const         DEFAULT_AUTO_DECLARE = false;
 
     /**
      * @var string
@@ -76,14 +77,14 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      * @param string $exchangeName
      * @param string $amqpConnectionFactoryReferenceName
      *
-     * @throws \Ecotone\Messaging\MessagingException
-     * @throws \Ecotone\Messaging\Support\InvalidArgumentException
+     * @throws MessagingException
+     * @throws InvalidArgumentException
      */
     private function __construct(string $exchangeName, string $amqpConnectionFactoryReferenceName)
     {
         $this->amqpConnectionFactoryReferenceName = $amqpConnectionFactoryReferenceName;
-        $this->exchangeName                       = $exchangeName;
-        $this->headerMapper                       = DefaultHeaderMapper::createNoMapping();
+        $this->exchangeName = $exchangeName;
+        $this->headerMapper = DefaultHeaderMapper::createNoMapping();
         $this->defaultConversionMediaType = MediaType::createApplicationXPHPSerializedObject();
     }
 
@@ -92,8 +93,8 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      * @param string $amqpConnectionFactoryReferenceName
      *
      * @return AmqpOutboundChannelAdapterBuilder
-     * @throws \Ecotone\Messaging\MessagingException
-     * @throws \Ecotone\Messaging\Support\InvalidArgumentException
+     * @throws MessagingException
+     * @throws InvalidArgumentException
      */
     public static function create(string $exchangeName, string $amqpConnectionFactoryReferenceName): self
     {
@@ -104,8 +105,8 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      * @param string $amqpConnectionFactoryReferenceName
      *
      * @return AmqpOutboundChannelAdapterBuilder
-     * @throws \Ecotone\Messaging\MessagingException
-     * @throws \Ecotone\Messaging\Support\InvalidArgumentException
+     * @throws MessagingException
+     * @throws InvalidArgumentException
      */
     public static function createForDefaultExchange(string $amqpConnectionFactoryReferenceName): self
     {
@@ -136,10 +137,10 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      * @param string $mediaType
      *
      * @return AmqpOutboundChannelAdapterBuilder
-     * @throws \Ecotone\Messaging\MessagingException
-     * @throws \Ecotone\Messaging\Support\InvalidArgumentException
+     * @throws MessagingException
+     * @throws InvalidArgumentException
      */
-    public function withDefaultConversionMediaType(string $mediaType) : self
+    public function withDefaultConversionMediaType(string $mediaType): self
     {
         $this->defaultConversionMediaType = MediaType::parseMediaType($mediaType);
 
@@ -151,7 +152,7 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      *
      * @return AmqpOutboundChannelAdapterBuilder
      */
-    public function withRoutingKeyFromHeader(string $headerName) : self
+    public function withRoutingKeyFromHeader(string $headerName): self
     {
         $this->routingKeyFromHeader = $headerName;
 
@@ -163,7 +164,7 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      *
      * @return AmqpOutboundChannelAdapterBuilder
      */
-    public function withExchangeFromHeader(string $exchangeName) : self
+    public function withExchangeFromHeader(string $exchangeName): self
     {
         $this->exchangeFromHeader = $exchangeName;
 

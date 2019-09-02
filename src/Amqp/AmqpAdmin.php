@@ -3,14 +3,11 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Interop\Amqp\AmqpConnectionFactory;
-use Interop\Amqp\AmqpContext;
-use Interop\Amqp\AmqpTopic as EnqueueExchange;
-use Interop\Amqp\AmqpQueue as EnqueueQueue;
-use Interop\Amqp\Impl\AmqpBind as EnqueueBinding;
-use Interop\Amqp\Impl\AmqpBind;
-use Interop\Amqp\Impl\AmqpTopic;
+use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
+use Interop\Amqp\AmqpContext;
+use Interop\Amqp\AmqpQueue as EnqueueQueue;
+use Interop\Amqp\AmqpTopic as EnqueueExchange;
 
 /**
  * Class AmqpAdmin
@@ -52,15 +49,15 @@ class AmqpAdmin
      * @param AmqpQueue[] $amqpQueues
      * @param AmqpBinding[] $amqpBindings
      * @return AmqpAdmin
-     * @throws \Ecotone\Messaging\MessagingException
+     * @throws MessagingException
      */
-    public static function createWith(iterable $amqpExchanges, iterable $amqpQueues, iterable $amqpBindings) : self
+    public static function createWith(iterable $amqpExchanges, iterable $amqpQueues, iterable $amqpBindings): self
     {
         $enqueueExchanges = [];
         $enqueueQueues = [];
         $defaultBindings = [];
 
-        foreach($amqpExchanges as $amqpExchange) {
+        foreach ($amqpExchanges as $amqpExchange) {
             $enqueueExchanges[$amqpExchange->getExchangeName()] = $amqpExchange->toEnqueueExchange();
         }
         foreach ($amqpQueues as $amqpQueue) {
@@ -71,98 +68,6 @@ class AmqpAdmin
         }
 
         return new self($enqueueExchanges, $enqueueQueues, array_merge($defaultBindings, $amqpBindings));
-    }
-
-    /**
-     * @return AmqpAdmin
-     */
-    public static function createEmpty() : self
-    {
-        return new self([], [], []);
-    }
-
-    /**
-     * @param string $exchangeName
-     * @param AmqpContext $amqpContext
-     * @throws InvalidArgumentException
-     */
-    public function declareExchangeWithQueuesAndBindings(string $exchangeName, AmqpContext $amqpContext) : void
-    {
-        $this->declareExchange($exchangeName, $amqpContext);
-
-        foreach ($this->amqpBindings as $amqpBinding) {
-            if ($amqpBinding->isRelatedToExchangeName($exchangeName)) {
-                $this->declareQueueWithBindings($amqpBinding->getQueueName(), $amqpContext);
-            }
-        }
-    }
-
-    /**
-     * @param string $queueName
-     * @param AmqpContext $amqpContext
-     * @throws InvalidArgumentException
-     */
-    public function declareQueueWithBindings(string $queueName, AmqpContext $amqpContext) : void
-    {
-        if (!$this->hasQueueWithName($queueName)) {
-            throw new \InvalidArgumentException("Can't declare {$queueName} no information about it");
-        }
-
-        $queue = $this->getQueueByName($queueName);
-        $amqpContext->declareQueue($queue);
-
-        foreach ($this->amqpBindings as $amqpBinding) {
-            if ($amqpBinding->isRelatedToQueueName($queueName) && !$amqpBinding->isBindToDefaultExchange()) {
-                $this->declareExchange($amqpBinding->getExchangeName(), $amqpContext);
-                $amqpContext->bind($amqpBinding->toEnqueueBinding());
-            }
-        }
-    }
-
-    /**
-     * @param string $exchangeName
-     * @return bool
-     */
-    public function hasExchangeWithName(string $exchangeName) : bool
-    {
-        return array_key_exists($exchangeName, $this->enqueueExchanges);
-    }
-
-    /**
-     * @param string $queueName
-     * @return bool
-     */
-    public function hasQueueWithName(string $queueName) : bool
-    {
-        return array_key_exists($queueName, $this->enqueueQueues);
-    }
-
-    /**
-     * @param string $exchangeName
-     * @return EnqueueExchange
-     * @throws InvalidArgumentException
-     */
-    public function getExchangeByName(string $exchangeName) : EnqueueExchange
-    {
-        if (!$this->hasExchangeWithName($exchangeName)) {
-            throw new InvalidArgumentException("Exchange with name {$exchangeName} was not defined");
-        }
-
-        return $this->enqueueExchanges[$exchangeName];
-    }
-
-    /**
-     * @param string $queueName
-     * @return EnqueueQueue
-     * @throws InvalidArgumentException
-     */
-    public function getQueueByName(string $queueName) : EnqueueQueue
-    {
-        if (!$this->hasQueueWithName($queueName)) {
-            throw new InvalidArgumentException("Queue with name {$queueName} was not defined");
-        }
-
-        return $this->enqueueQueues[$queueName];
     }
 
     /**
@@ -182,6 +87,30 @@ class AmqpAdmin
     }
 
     /**
+     * @return AmqpAdmin
+     */
+    public static function createEmpty(): self
+    {
+        return new self([], [], []);
+    }
+
+    /**
+     * @param string $exchangeName
+     * @param AmqpContext $amqpContext
+     * @throws InvalidArgumentException
+     */
+    public function declareExchangeWithQueuesAndBindings(string $exchangeName, AmqpContext $amqpContext): void
+    {
+        $this->declareExchange($exchangeName, $amqpContext);
+
+        foreach ($this->amqpBindings as $amqpBinding) {
+            if ($amqpBinding->isRelatedToExchangeName($exchangeName)) {
+                $this->declareQueueWithBindings($amqpBinding->getQueueName(), $amqpContext);
+            }
+        }
+    }
+
+    /**
      * @param string $exchangeName
      * @param AmqpContext $amqpContext
      * @throws InvalidArgumentException
@@ -193,5 +122,73 @@ class AmqpAdmin
 
             $amqpContext->declareTopic($exchange);
         }
+    }
+
+    /**
+     * @param string $exchangeName
+     * @return bool
+     */
+    public function hasExchangeWithName(string $exchangeName): bool
+    {
+        return array_key_exists($exchangeName, $this->enqueueExchanges);
+    }
+
+    /**
+     * @param string $exchangeName
+     * @return EnqueueExchange
+     * @throws InvalidArgumentException
+     */
+    public function getExchangeByName(string $exchangeName): EnqueueExchange
+    {
+        if (!$this->hasExchangeWithName($exchangeName)) {
+            throw new InvalidArgumentException("Exchange with name {$exchangeName} was not defined");
+        }
+
+        return $this->enqueueExchanges[$exchangeName];
+    }
+
+    /**
+     * @param string $queueName
+     * @param AmqpContext $amqpContext
+     * @throws InvalidArgumentException
+     */
+    public function declareQueueWithBindings(string $queueName, AmqpContext $amqpContext): void
+    {
+        if (!$this->hasQueueWithName($queueName)) {
+            throw new \InvalidArgumentException("Can't declare {$queueName} no information about it");
+        }
+
+        $queue = $this->getQueueByName($queueName);
+        $amqpContext->declareQueue($queue);
+
+        foreach ($this->amqpBindings as $amqpBinding) {
+            if ($amqpBinding->isRelatedToQueueName($queueName) && !$amqpBinding->isBindToDefaultExchange()) {
+                $this->declareExchange($amqpBinding->getExchangeName(), $amqpContext);
+                $amqpContext->bind($amqpBinding->toEnqueueBinding());
+            }
+        }
+    }
+
+    /**
+     * @param string $queueName
+     * @return bool
+     */
+    public function hasQueueWithName(string $queueName): bool
+    {
+        return array_key_exists($queueName, $this->enqueueQueues);
+    }
+
+    /**
+     * @param string $queueName
+     * @return EnqueueQueue
+     * @throws InvalidArgumentException
+     */
+    public function getQueueByName(string $queueName): EnqueueQueue
+    {
+        if (!$this->hasQueueWithName($queueName)) {
+            throw new InvalidArgumentException("Queue with name {$queueName} was not defined");
+        }
+
+        return $this->enqueueQueues[$queueName];
     }
 }

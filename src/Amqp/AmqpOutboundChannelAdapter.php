@@ -3,19 +3,17 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Interop\Amqp\AmqpConnectionFactory;
-use Interop\Amqp\AmqpContext;
-use Interop\Amqp\AmqpDestination;
-use Interop\Amqp\AmqpMessage;
-use Interop\Amqp\AmqpTopic;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\TypeDescriptor;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
-use Ecotone\Messaging\MessageConverter\MessageConverter;
 use Ecotone\Messaging\MessageHandler;
 use Ecotone\Messaging\Support\InvalidArgumentException;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Interop\Amqp\AmqpContext;
+use Interop\Amqp\AmqpMessage;
+use Interop\Amqp\Impl\AmqpTopic;
 
 /**
  * Class OutboundAmqpGateway
@@ -86,14 +84,14 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType)
     {
-        $this->amqpConnectionFactory     = $amqpConnectionFactory;
-        $this->routingKey                = $routingKey;
-        $this->exchangeName              = $exchangeName;
-        $this->amqpAdmin                 = $amqpAdmin;
+        $this->amqpConnectionFactory = $amqpConnectionFactory;
+        $this->routingKey = $routingKey;
+        $this->exchangeName = $exchangeName;
+        $this->amqpAdmin = $amqpAdmin;
         $this->defaultPersistentDelivery = $defaultPersistentDelivery;
-        $this->headerMapper              = $headerMapper;
-        $this->autoDeclare               = $autoDeclare;
-        $this->routingKeyFromHeaderName      = $routingKeyFromHeaderName;
+        $this->headerMapper = $headerMapper;
+        $this->autoDeclare = $autoDeclare;
+        $this->routingKeyFromHeaderName = $routingKeyFromHeaderName;
         $this->conversionService = $conversionService;
         $this->defaultConversionMediaType = $defaultConversionMediaType;
         $this->exchangeFromHeaderName = $exchangeFromHeaderName;
@@ -140,7 +138,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
                     TypeDescriptor::createStringType(),
                     $this->defaultConversionMediaType
                 );
-            }else {
+            } else {
                 throw new InvalidArgumentException("Can't send message to amqp channel. Payload has incorrect non-convertable type or converter is missing. 
                  From {$sourceMediaType}:{$sourceType} to {$this->defaultConversionMediaType}:{$targetType} converted: " . TypeDescriptor::createFromVariable($enqueueMessagePayload)->toString());
             }
@@ -152,7 +150,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         if ($this->routingKeyFromHeaderName) {
             $routingKey = $message->getHeaders()->containsKey($this->routingKeyFromHeaderName) ? $message->getHeaders()->get($this->routingKeyFromHeaderName) : $this->routingKey;
-        }else {
+        } else {
             $routingKey = $this->routingKey;
         }
 
@@ -166,7 +164,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $messageToSend->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-        $context->createProducer()->send(new \Interop\Amqp\Impl\AmqpTopic($exchangeName), $messageToSend);
+        $context->createProducer()->send(new AmqpTopic($exchangeName), $messageToSend);
         $context->close();
     }
 }

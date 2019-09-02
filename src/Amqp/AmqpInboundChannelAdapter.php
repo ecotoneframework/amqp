@@ -3,14 +3,7 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Enqueue\AmqpLib\AmqpConsumer;
-use Interop\Amqp\AmqpConnectionFactory;
-use Interop\Amqp\AmqpContext;
-use Interop\Amqp\AmqpMessage;
-use Interop\Queue\Consumer as EnqueueConsumer;
-use Interop\Queue\Message as EnqueueMessage;
 use Ecotone\Messaging\Conversion\MediaType;
-use Ecotone\Messaging\Endpoint\AcknowledgementCallback;
 use Ecotone\Messaging\Endpoint\EntrypointGateway;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
@@ -18,6 +11,11 @@ use Ecotone\Messaging\Scheduling\TaskExecutor;
 use Ecotone\Messaging\Support\Assert;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Ecotone\Messaging\Support\MessageBuilder;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpLib\AmqpConsumer;
+use Interop\Amqp\AmqpContext;
+use Interop\Amqp\AmqpMessage;
+use Interop\Queue\Consumer as EnqueueConsumer;
 use Throwable;
 
 /**
@@ -63,6 +61,14 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
      * @var bool
      */
     private $queueNameWithEndpointId;
+    /**
+     * @var bool
+     */
+    private $initialized = false;
+    /**
+     * @var AmqpConsumer[]
+     */
+    private $initializedConsumer = [];
 
     /**
      * InboundAmqpEnqueueGateway constructor.
@@ -101,15 +107,6 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
     }
 
     /**
-     * @var bool
-     */
-    private $initialized = false;
-    /**
-     * @var AmqpConsumer[]
-     */
-    private $initializedConsumer = [];
-
-    /**
      * @throws InvalidArgumentException
      * @throws Throwable
      */
@@ -125,21 +122,11 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
     }
 
     /**
-     * @inheritDoc
-     */
-    public function executeEntrypoint($message)
-    {
-        Assert::isSubclassOf($message, Message::class, "Passed object to amqp inbound channel adapter is not a Message");
-
-        $this->inboundAmqpGateway->executeEntrypoint($message);
-    }
-
-    /**
      * @param string|null $endpointId
      * @return Message|null
      * @throws InvalidArgumentException
      */
-    public function getMessage(?string $endpointId) : ?Message
+    public function getMessage(?string $endpointId): ?Message
     {
         if (!$this->initialized || !$this->queueNameWithEndpointId) {
             $context = $this->amqpConnectionFactory->createContext();
@@ -156,6 +143,35 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
         }
 
         return $this->toMessage($amqpMessage, $consumer);
+    }
+
+    /**
+     * @param string|null $endpointId
+     * @return string
+     */
+    private function getQueueName(?string $endpointId): string
+    {
+        return $this->queueNameWithEndpointId ? $this->amqpQueueName . "." . $endpointId : $this->amqpQueueName;
+    }
+
+    /**
+     * @param string|null $endpointId
+     * @return \Interop\Amqp\AmqpConsumer
+     */
+    private function getConsumer(?string $endpointId): \Interop\Amqp\AmqpConsumer
+    {
+        $initializedConsumerId = $endpointId ?? 0;
+        if (isset($this->initializedConsumer[$initializedConsumerId])) {
+            return $this->initializedConsumer[$initializedConsumerId];
+        }
+
+        /** @var AmqpContext $context */
+        $context = $this->amqpConnectionFactory->createContext();
+
+        $consumer = $context->createConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
+        $this->initializedConsumer[$initializedConsumerId] = $consumer;
+
+        return $consumer;
     }
 
     /**
@@ -189,31 +205,12 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
     }
 
     /**
-     * @param string|null $endpointId
-     * @return \Interop\Amqp\AmqpConsumer
+     * @inheritDoc
      */
-    private function getConsumer(?string $endpointId) : \Interop\Amqp\AmqpConsumer
+    public function executeEntrypoint($message)
     {
-        $initializedConsumerId = $endpointId ?? 0;
-        if (isset($this->initializedConsumer[$initializedConsumerId])) {
-            return $this->initializedConsumer[$initializedConsumerId];
-        }
+        Assert::isSubclassOf($message, Message::class, "Passed object to amqp inbound channel adapter is not a Message");
 
-        /** @var AmqpContext $context */
-        $context = $this->amqpConnectionFactory->createContext();
-
-        $consumer = $context->createConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
-        $this->initializedConsumer[$initializedConsumerId] = $consumer;
-
-        return $consumer;
-    }
-
-    /**
-     * @param string|null $endpointId
-     * @return string
-     */
-    private function getQueueName(?string $endpointId): string
-    {
-        return $this->queueNameWithEndpointId ? $this->amqpQueueName . "." . $endpointId : $this->amqpQueueName;
+        $this->inboundAmqpGateway->executeEntrypoint($message);
     }
 }
