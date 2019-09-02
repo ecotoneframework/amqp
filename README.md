@@ -5,3 +5,7 @@
 [![Latest Stable Version](https://poser.pugx.org/ecotone/amqp/v/stable)](https://packagist.org/packages/ecotone/amqp)
 
 Provides integration for AMQP with Ecotone.
+
+
+->event driven -> outbound channel adapter
+input <-
