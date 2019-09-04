@@ -4,7 +4,7 @@
 namespace Ecotone\Amqp\Annotation;
 
 use Doctrine\Common\Annotations\Annotation\Required;
-use Ecotone\Messaging\Annotation\EndpointAnnotation;
+use Ecotone\Messaging\Annotation\ChannelAdapter;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
@@ -13,7 +13,7 @@ use Enqueue\AmqpLib\AmqpConnectionFactory;
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  * @Annotation
  */
-class AmqpEndpoint extends EndpointAnnotation
+class AmqpChannelAdapter extends ChannelAdapter
 {
     /**
      * @var string

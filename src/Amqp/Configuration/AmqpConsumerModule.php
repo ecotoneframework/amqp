@@ -4,7 +4,7 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
-use Ecotone\Amqp\Annotation\AmqpEndpoint;
+use Ecotone\Amqp\Annotation\AmqpChannelAdapter;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
@@ -52,7 +52,7 @@ class AmqpConsumerModule implements AnnotationModule
     public static function create(AnnotationRegistrationService $annotationRegistrationService)
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
-        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, AmqpEndpoint::class);
+        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, AmqpChannelAdapter::class);
 
         $amqpInboundChannelAdapter = [];
         $serviceActivators = [];
@@ -62,7 +62,7 @@ class AmqpConsumerModule implements AnnotationModule
             $messageEndpoint = $amqpConsumer->getAnnotationForClass();
 
             $reference = $messageEndpoint->referenceName ?? $amqpConsumer->getClassName();
-            /** @var AmqpEndpoint $amqpConsumerAnnotation */
+            /** @var AmqpChannelAdapter $amqpConsumerAnnotation */
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
             $endpointId = $amqpConsumerAnnotation->endpointId;

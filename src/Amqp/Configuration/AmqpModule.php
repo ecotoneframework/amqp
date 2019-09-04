@@ -10,6 +10,8 @@ use Ecotone\Amqp\AmqpBackendMessageChannelConsumer;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Messaging\Annotation\InputOutputEndpointAnnotation;
+use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
@@ -28,11 +30,35 @@ use Ecotone\Messaging\Handler\ReferenceSearchService;
 class AmqpModule implements AnnotationModule
 {
     /**
+     * @var string[]
+     */
+    private $inputChannelEndpointMapping = [];
+
+    /**
+     * AmqpModule constructor.
+     * @param string[] $inputChannelEndpointMapping
+     */
+    private function __construct(array $inputChannelEndpointMapping)
+    {
+        $this->inputChannelEndpointMapping = $inputChannelEndpointMapping;
+    }
+
+    /**
      * @inheritDoc
      */
     public static function create(AnnotationRegistrationService $annotationRegistrationService)
     {
-        return new self();
+        $inputChannelEndpointMapping = [];
+        $handlers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, InputOutputEndpointAnnotation::class);
+
+        foreach ($handlers as $handler) {
+            /** @var InputOutputEndpointAnnotation $methodAnnotation */
+            $methodAnnotation = $handler->getAnnotationForMethod();
+
+            $inputChannelEndpointMapping[$methodAnnotation->inputChannelName][] = $methodAnnotation->endpointId;
+        }
+
+        return new self($inputChannelEndpointMapping);
     }
 
     /**
@@ -69,13 +95,13 @@ class AmqpModule implements AnnotationModule
                 $amqpBindings[] = $extensionObject;
             }
         }
-        foreach ($extensionObjects as $extensionObject) {
-            if ($extensionObject instanceof MessageHandlerBuilder) {
-                if (in_array($extensionObject->getInputMessageChannelName(), $publishSubscribeExchanges)) {
-                    $queueName = $extensionObject->getInputMessageChannelName() . "." . $extensionObject->getEndpointId();
+        foreach ($this->inputChannelEndpointMapping as $inputChannelName => $endpoints) {
+            if (in_array($inputChannelName, $publishSubscribeExchanges)) {
+                foreach ($endpoints as $endpoint) {
+                    $queueName = $inputChannelName . "." . $endpoint;
                     $amqpQueues[] = AmqpQueue::createWith($queueName);
                     $amqpBindings[] = AmqpBinding::createFromNamesWithoutRoutingKey(
-                        AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName(),
+                        AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $inputChannelName,
                         $queueName
                     );
                 }
@@ -98,8 +124,7 @@ class AmqpModule implements AnnotationModule
             $extensionObject instanceof AmqpBackedMessageChannelBuilder
             || $extensionObject instanceof AmqpExchange
             || $extensionObject instanceof AmqpQueue
-            || $extensionObject instanceof AmqpBinding
-            || $extensionObject instanceof MessageHandlerBuilder;
+            || $extensionObject instanceof AmqpBinding;
     }
 
     /**
