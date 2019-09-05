@@ -9,7 +9,11 @@ use Ecotone\Messaging\Endpoint\MessageHandlerConsumerBuilder;
 use Ecotone\Messaging\Endpoint\PollingConsumer\PollingConsumerBuilder;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\ChannelResolver;
+use Ecotone\Messaging\Handler\Logger\Annotation\LogError;
+use Ecotone\Messaging\Handler\Logger\ExceptionLoggingInterceptorBuilder;
+use Ecotone\Messaging\Handler\Logger\LoggingInterceptor;
 use Ecotone\Messaging\Handler\MessageHandlerBuilder;
+use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 
 /**
@@ -35,6 +39,13 @@ class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
         $pollingConsumerBuilder = new PollingConsumerBuilder();
 
         $pollingConsumerBuilder->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor($messageHandlerBuilder->getEndpointId()));
+        $pollingConsumerBuilder->addAroundInterceptor(AroundInterceptorReference::createWithObjectBuilder(
+            "errorLog",
+            new ExceptionLoggingInterceptorBuilder(),
+            "logException",
+            -1,
+            ""
+        ));
 
         return $pollingConsumerBuilder->build($channelResolver, $referenceSearchService, $messageHandlerBuilder, $pollingMetadata);
     }
