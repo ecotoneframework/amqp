@@ -9,6 +9,7 @@ use Ecotone\Messaging\Handler\TypeDescriptor;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageConverter\HeaderMapper;
 use Ecotone\Messaging\MessageHandler;
+use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Interop\Amqp\AmqpContext;
@@ -145,6 +146,13 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         }
 
         $applicationHeaders = $this->headerMapper->mapFromMessageHeaders($message->getHeaders()->headers());
+        if ($message->getHeaders()->containsKey(MessageHeaders::TYPE_ID)) {
+            $applicationHeaders[MessageHeaders::TYPE_ID] = $message->getHeaders()->get(MessageHeaders::TYPE_ID);
+        }
+        if ($message->getHeaders()->containsKey(MessageHeaders::ROUTING_SLIP)) {
+            $applicationHeaders[MessageHeaders::ROUTING_SLIP] = $message->getHeaders()->get(MessageHeaders::ROUTING_SLIP);
+        }
+
         $messageToSend = new \Interop\Amqp\Impl\AmqpMessage($enqueueMessagePayload, $applicationHeaders, []);
 
 
