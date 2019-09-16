@@ -114,6 +114,8 @@ class AmqpOutboundChannelAdapter implements MessageHandler
             $this->amqpAdmin->declareExchangeWithQueuesAndBindings($exchangeName, $context);
         }
 
+        $applicationHeaders = $this->headerMapper->mapFromMessageHeaders($message->getHeaders()->headers());
+
         $enqueueMessagePayload = $message->getPayload();
         $mediaType = $message->getHeaders()->hasContentType() ? $message->getHeaders()->getContentType() : null;
         if (!is_string($enqueueMessagePayload)) {
@@ -131,10 +133,12 @@ class AmqpOutboundChannelAdapter implements MessageHandler
                 $targetType,
                 $this->defaultConversionMediaType
             )) {
+                $applicationHeaders[MessageHeaders::TYPE_ID] = $sourceType->toString();
+
                 $mediaType = $this->defaultConversionMediaType;
                 $enqueueMessagePayload = $this->conversionService->convert(
                     $enqueueMessagePayload,
-                    $message->getHeaders()->getContentType()->hasTypeParameter() ? $message->getHeaders()->getContentType()->getTypeParameter() : TypeDescriptor::createFromVariable($enqueueMessagePayload),
+                    $sourceType,
                     $message->getHeaders()->getContentType(),
                     TypeDescriptor::createStringType(),
                     $this->defaultConversionMediaType
@@ -145,10 +149,6 @@ class AmqpOutboundChannelAdapter implements MessageHandler
             }
         }
 
-        $applicationHeaders = $this->headerMapper->mapFromMessageHeaders($message->getHeaders()->headers());
-        if ($message->getHeaders()->containsKey(MessageHeaders::TYPE_ID)) {
-            $applicationHeaders[MessageHeaders::TYPE_ID] = $message->getHeaders()->get(MessageHeaders::TYPE_ID);
-        }
         if ($message->getHeaders()->containsKey(MessageHeaders::ROUTING_SLIP)) {
             $applicationHeaders[MessageHeaders::ROUTING_SLIP] = $message->getHeaders()->get(MessageHeaders::ROUTING_SLIP);
         }
