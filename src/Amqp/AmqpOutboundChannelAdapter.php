@@ -133,7 +133,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
                 $targetType,
                 $this->defaultConversionMediaType
             )) {
-                $applicationHeaders[MessageHeaders::TYPE_ID] = $sourceType->toString();
+                $applicationHeaders[MessageHeaders::TYPE_ID] = TypeDescriptor::createFromVariable($enqueueMessagePayload)->toString();
 
                 $mediaType = $this->defaultConversionMediaType;
                 $enqueueMessagePayload = $this->conversionService->convert(
