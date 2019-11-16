@@ -26,7 +26,7 @@
     },
     "require": {
         "php": "^7.3",
-        "ecotone/ecotone": "^0.3.0@dev",
+        "ecotone/ecotone": "^0.4.0@dev",
 
         "enqueue/amqp-lib": "^0.9",
         "enqueue/dsn": "^0.9",
