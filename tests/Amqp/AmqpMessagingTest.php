@@ -25,7 +25,7 @@ abstract class AmqpMessagingTest extends TestCase
      */
     public function getCachedConnectionFactory() : AmqpConnectionFactory
     {
-        return new CachedAmqpConnectionFactory($this->getRabbitConnectionFactory());
+        return $this->getRabbitConnectionFactory();
     }
 
     /**

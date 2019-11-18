@@ -168,6 +168,13 @@ class AmqpInboundChannelAdapter implements TaskExecutor, EntrypointGateway
         /** @var AmqpContext $context */
         $context = $this->amqpConnectionFactory->createContext();
 
+        $heartbeatOnTick = $this->amqpConnectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
+        if ($heartbeatOnTick) {
+            register_tick_function(function (AmqpContext $context) {
+                $context->getLibChannel()->getConnection()->checkHeartBeat();
+            }, $context);
+        }
+
         $consumer = $context->createConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
         $this->initializedConsumer[$initializedConsumerId] = $consumer;
 

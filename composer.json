@@ -17,7 +17,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Test\\Ecotone\\": "tests"
+            "Test\\Ecotone\\": ["tests", "vendor/ecotone/ecotone/tests"]
         },
         "psr-0": {
             "FixtureAutoloadTest\\": "tests\\Messaging",
