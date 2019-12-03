@@ -33,8 +33,9 @@ abstract class AmqpMessagingTest extends TestCase
      */
     public function getRabbitConnectionFactory() : AmqpConnectionFactory
     {
+        $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "rabbitmq";
         $config = [
-            "dsn" => "amqp://rabbitmq:5672"
+            "dsn" => "amqp://{$host}:5672"
         ];
 
         return new AmqpLibConnection($config);

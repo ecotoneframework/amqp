@@ -3,6 +3,7 @@ language: php
 
 php:
   - 7.3
+  - 7.4snapshot
 
 before_install:
   - pecl install ast
@@ -20,3 +21,6 @@ after_success:
 
 services:
   - rabbitmq
+
+env:
+  - RABBIT_HOST=localhost

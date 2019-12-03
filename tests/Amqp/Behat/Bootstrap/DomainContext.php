@@ -42,9 +42,10 @@ class DomainContext extends TestCase implements Context
      */
     public function iActiveMessagingForNamespace(string $namespace)
     {
+        $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "rabbitmq";
         $objects = [
             new OrderService(),
-            new AmqpConnectionFactory(["dsn" => "amqp://rabbitmq:5672"])
+            new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"])
         ];
 
         $cacheDirectoryPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString();
