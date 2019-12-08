@@ -21,7 +21,7 @@ class RegisterAmqpPublisher
      */
     private $amqpConnectionReference;
     /**
-     * @var string
+     * @var string|null
      */
     private $outputDefaultConversionMediaType;
     /**
@@ -41,10 +41,10 @@ class RegisterAmqpPublisher
      * RegisterAmqpPublisher constructor.
      * @param string $amqpConnectionReference
      * @param string $exchangeName
-     * @param string $outputDefaultConversionMediaType
+     * @param string|null $outputDefaultConversionMediaType
      * @param string $referenceName
      */
-    private function __construct(string $amqpConnectionReference, string $exchangeName, string $outputDefaultConversionMediaType, string $referenceName)
+    private function __construct(string $amqpConnectionReference, string $exchangeName, ?string $outputDefaultConversionMediaType, string $referenceName)
     {
         $this->amqpConnectionReference = $amqpConnectionReference;
         $this->outputDefaultConversionMediaType = $outputDefaultConversionMediaType;
@@ -56,10 +56,10 @@ class RegisterAmqpPublisher
      * @param string $publisherReferenceName
      * @param string $amqpConnectionReference
      * @param string $exchangeName
-     * @param string $outputDefaultConversionMediaType
+     * @param string|null $outputDefaultConversionMediaType
      * @return RegisterAmqpPublisher
      */
-    public static function create(string $publisherReferenceName, string $amqpConnectionReference = AmqpConnectionFactory::class, string $exchangeName = "", string $outputDefaultConversionMediaType = MediaType::TEXT_PLAIN): self
+    public static function create(string $publisherReferenceName, string $amqpConnectionReference = AmqpConnectionFactory::class, string $exchangeName = "", ?string $outputDefaultConversionMediaType = null): self
     {
         return new self($amqpConnectionReference, $exchangeName, $outputDefaultConversionMediaType, $publisherReferenceName);
     }
@@ -91,9 +91,9 @@ class RegisterAmqpPublisher
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getOutputDefaultConversionMediaType(): string
+    public function getOutputDefaultConversionMediaType(): ?string
     {
         return $this->outputDefaultConversionMediaType;
     }

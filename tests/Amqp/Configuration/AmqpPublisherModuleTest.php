@@ -11,6 +11,7 @@ use Ecotone\Amqp\Configuration\AmqpPublisherModule;
 use Ecotone\Amqp\Configuration\RegisterAmqpPublisher;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
@@ -54,7 +55,7 @@ class AmqpPublisherModuleTest extends TestCase
                     GatewayProxyBuilder::create(Publisher::class, Publisher::class, "convertAndSend", Publisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
                         ])
                 )
                 ->registerGatewayBuilder(
@@ -62,7 +63,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
                         ])
                 )
                 ->registerMessageHandler(
@@ -83,6 +84,60 @@ class AmqpPublisherModuleTest extends TestCase
         );
     }
 
+    public function test_registering_single_amqp_publisher_with_application_conversion_media_type()
+    {
+        $this->assertEquals(
+            $this->createMessagingSystemConfiguration()
+                ->registerGatewayBuilder(
+                    GatewayProxyBuilder::create(Publisher::class, Publisher::class, "send", Publisher::class)
+                        ->withParameterConverters([
+                            GatewayPayloadBuilder::create("data"),
+                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                        ])
+                )
+                ->registerGatewayBuilder(
+                    GatewayProxyBuilder::create(Publisher::class, Publisher::class, "sendWithMetadata", Publisher::class)
+                        ->withParameterConverters([
+                            GatewayPayloadBuilder::create("data"),
+                            GatewayHeadersBuilder::create("metadata"),
+                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                        ])
+                )
+                ->registerGatewayBuilder(
+                    GatewayProxyBuilder::create(Publisher::class, Publisher::class, "convertAndSend", Publisher::class)
+                        ->withParameterConverters([
+                            GatewayPayloadBuilder::create("data"),
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                        ])
+                )
+                ->registerGatewayBuilder(
+                    GatewayProxyBuilder::create(Publisher::class, Publisher::class, "convertAndSendWithMetadata", Publisher::class)
+                        ->withParameterConverters([
+                            GatewayPayloadBuilder::create("data"),
+                            GatewayHeadersBuilder::create("metadata"),
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                        ])
+                )
+                ->registerMessageHandler(
+                    AmqpOutboundChannelAdapterBuilder::create("exchangeName", "amqpConnection")
+                        ->withEndpointId(Publisher::class . ".handler")
+                        ->withInputChannelName(Publisher::class)
+                        ->withRoutingKeyFromHeader("amqpRouting")
+                        ->withDefaultPersistentMode(true)
+                        ->withAutoDeclareOnSend(true)
+                )
+                ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
+            $this->prepareConfiguration(
+                [
+                    RegisterAmqpPublisher::create(Publisher::class, "amqpConnection", "exchangeName")
+                        ->withAutoDeclareQueueOnSend(true),
+                    ApplicationConfiguration::createWithDefaults()
+                        ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)
+                ]
+            )
+        );
+    }
+
     /**
      * @return MessagingSystemConfiguration
      * @throws MessagingException
@@ -93,7 +148,7 @@ class AmqpPublisherModuleTest extends TestCase
      */
     private function createMessagingSystemConfiguration(): Configuration
     {
-        return MessagingSystemConfiguration::prepare(InMemoryModuleMessaging::createEmpty());
+        return MessagingSystemConfiguration::prepareWithDefaults(InMemoryModuleMessaging::createEmpty());
     }
 
     /**

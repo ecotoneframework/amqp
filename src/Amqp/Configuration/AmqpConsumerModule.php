@@ -12,6 +12,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ParameterConverterAnnotationFactory;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\OptionalReference;
 use Ecotone\Messaging\Config\RequiredReference;
 use Ecotone\Messaging\Endpoint\InboundChannelAdapter\InboundChannelAdapterBuilder;
 use Ecotone\Messaging\Handler\InterfaceToCall;
@@ -117,7 +118,7 @@ class AmqpConsumerModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public function getRequiredReferences(): array
+    public function getRelatedReferences(): array
     {
         return [];
     }

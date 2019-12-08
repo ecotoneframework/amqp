@@ -9,9 +9,11 @@ use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\OptionalReference;
 use Ecotone\Messaging\Config\RequiredReference;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\Gateway\GatewayProxyBuilder;
@@ -52,13 +54,28 @@ class AmqpPublisherModule implements AnnotationModule
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         $registeredReferences = [];
+        /** @var ApplicationConfiguration $applicationConfiguration */
+        $applicationConfiguration = null;
+        foreach ($extensionObjects as $extensionObject) {
+            if ($extensionObject instanceof ApplicationConfiguration) {
+                $applicationConfiguration = $extensionObject;
+                break;
+            }
+        }
+
         /** @var RegisterAmqpPublisher $amqpPublisher */
         foreach ($extensionObjects as $amqpPublisher) {
+            if (!($amqpPublisher instanceof RegisterAmqpPublisher)) {
+                return;
+            }
+
             if (in_array($amqpPublisher->getReferenceName(), $registeredReferences)) {
                 throw ConfigurationException::create("Registering two publishers under same reference name {$amqpPublisher->getReferenceName()}. You need to create publisher with specific reference using `createWithReferenceName`.");
             }
 
             $registeredReferences[] = $amqpPublisher->getReferenceName();
+            $mediaType = $amqpPublisher->getOutputDefaultConversionMediaType() ? $amqpPublisher->getOutputDefaultConversionMediaType() : $applicationConfiguration->getDefaultSerializationMediaType();
+
             $configuration = $configuration
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "send", $amqpPublisher->getReferenceName())
@@ -79,7 +96,7 @@ class AmqpPublisherModule implements AnnotationModule
                     GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "convertAndSend", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, $mediaType)
                         ])
                 )
                 ->registerGatewayBuilder(
@@ -87,7 +104,7 @@ class AmqpPublisherModule implements AnnotationModule
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, $mediaType)
                         ])
                 )
                 ->registerMessageHandler(
@@ -107,13 +124,15 @@ class AmqpPublisherModule implements AnnotationModule
      */
     public function canHandle($extensionObject): bool
     {
-        return $extensionObject instanceof RegisterAmqpPublisher;
+        return
+            $extensionObject instanceof RegisterAmqpPublisher
+            || $extensionObject instanceof ApplicationConfiguration;
     }
 
     /**
      * @inheritDoc
      */
-    public function getRequiredReferences(): array
+    public function getRelatedReferences(): array
     {
         return [];
     }

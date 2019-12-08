@@ -15,8 +15,11 @@ use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\OptionalReference;
+use Ecotone\Messaging\Config\RequiredReference;
 use Ecotone\Messaging\Handler\InterfaceToCall;
 use Ecotone\Messaging\Handler\MessageHandlerBuilder;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
@@ -81,6 +84,14 @@ class AmqpModule implements AnnotationModule
 
         foreach ($extensionObjects as $extensionObject) {
             if ($extensionObject instanceof AmqpBackedMessageChannelBuilder) {
+                if (!$extensionObject->getDefaultConversionMediaType()) {
+                    foreach ($extensionObjects as $extensionObjectToCheck) {
+                        if ($extensionObjectToCheck instanceof ApplicationConfiguration) {
+                            $extensionObject->withDefaultConversionMediaType($extensionObjectToCheck->getDefaultSerializationMediaType());
+                        }
+                    }
+                }
+
                 if ($extensionObject->isPublishSubscribe()) {
                     $publishSubscribeExchanges[] = $extensionObject->getMessageChannelName();
                     $amqpExchanges[] = AmqpExchange::createFanoutExchange(AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName());
@@ -124,13 +135,14 @@ class AmqpModule implements AnnotationModule
             $extensionObject instanceof AmqpBackedMessageChannelBuilder
             || $extensionObject instanceof AmqpExchange
             || $extensionObject instanceof AmqpQueue
-            || $extensionObject instanceof AmqpBinding;
+            || $extensionObject instanceof AmqpBinding
+            || $extensionObject instanceof ApplicationConfiguration;
     }
 
     /**
      * @inheritDoc
      */
-    public function getRequiredReferences(): array
+    public function getRelatedReferences(): array
     {
         return [];
     }

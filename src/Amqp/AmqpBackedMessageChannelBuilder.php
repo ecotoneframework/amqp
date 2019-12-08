@@ -37,7 +37,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      */
     private $receiveTimeoutInMilliseconds = AmqpInboundChannelAdapterBuilder::DEFAULT_RECEIVE_TIMEOUT;
     /**
-     * @var MediaType
+     * @var MediaType|null
      */
     private $defaultConversionMediaType;
     /**
@@ -144,6 +144,11 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
         $this->defaultConversionMediaType = MediaType::parseMediaType($mediaType);
 
         return $this;
+    }
+
+    public function getDefaultConversionMediaType(): ?MediaType
+    {
+        return $this->defaultConversionMediaType;
     }
 
     /**

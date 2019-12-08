@@ -8,9 +8,11 @@ use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
 use Ecotone\Amqp\Configuration\AmqpConsumerModule;
 use Ecotone\Amqp\Configuration\AmqpPublisherModule;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
+use Ecotone\Messaging\Config\InMemoryReferenceTypeFromNameResolver;
 use Ecotone\Messaging\Config\MessagingSystemConfiguration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCall;
@@ -63,7 +65,7 @@ class AmqpConsumerModuleTest extends TestCase
      */
     private function createMessagingSystemConfiguration(): Configuration
     {
-        return MessagingSystemConfiguration::prepare(InMemoryModuleMessaging::createEmpty());
+        return MessagingSystemConfiguration::prepareWithDefaults(InMemoryModuleMessaging::createEmpty());
     }
 
     /**

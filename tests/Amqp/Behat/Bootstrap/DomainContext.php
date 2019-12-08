@@ -7,6 +7,7 @@ use Behat\Behat\Tester\Exception\PendingException;
 use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Lite\EcotoneLiteConfiguration;
 use Ecotone\Lite\InMemoryPSRContainer;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
 use Ecotone\Messaging\Conversion\MediaType;
@@ -48,17 +49,12 @@ class DomainContext extends TestCase implements Context
             new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"])
         ];
 
-        $cacheDirectoryPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString();
-        mkdir($cacheDirectoryPath);
-
-        self::$messagingSystem = EcotoneLiteConfiguration::createWithCache(
+        self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
             __DIR__ . "/../../../../",
-            $cacheDirectoryPath,
             InMemoryPSRContainer::createFromObjects($objects),
-            [$namespace],
-            false,
-            true,
-            "test"
+            ApplicationConfiguration::createWithDefaults()
+                ->withNamespaces([$namespace])
+                ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
         );
     }
 
