@@ -78,7 +78,7 @@ class AmqpPublisherModuleTest extends TestCase
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
             $this->prepareConfiguration(
                 [
-                    RegisterAmqpPublisher::create(Publisher::class, "amqpConnection", "exchangeName", MediaType::APPLICATION_JSON)
+                    RegisterAmqpPublisher::create(Publisher::class, "exchangeName", MediaType::APPLICATION_JSON, "amqpConnection")
                         ->withAutoDeclareQueueOnSend(true)
                 ]
             )
@@ -131,7 +131,7 @@ class AmqpPublisherModuleTest extends TestCase
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
             $this->prepareConfiguration(
                 [
-                    RegisterAmqpPublisher::create(Publisher::class, "amqpConnection", "exchangeName")
+                    RegisterAmqpPublisher::create(Publisher::class, "exchangeName", null, "amqpConnection")
                         ->withAutoDeclareQueueOnSend(true),
                     ApplicationConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)
@@ -185,8 +185,8 @@ class AmqpPublisherModuleTest extends TestCase
 
         $this->prepareConfiguration(
             [
-                RegisterAmqpPublisher::create("test", "amqpConnection", Publisher::class, MediaType::APPLICATION_JSON),
-                RegisterAmqpPublisher::create("test", "amqpConnection", Publisher::class, MediaType::APPLICATION_JSON)
+                RegisterAmqpPublisher::create("test", Publisher::class, MediaType::APPLICATION_JSON, "amqpConnection"),
+                RegisterAmqpPublisher::create("test", Publisher::class, MediaType::APPLICATION_JSON, "amqpConnection")
             ]
         );
     }
