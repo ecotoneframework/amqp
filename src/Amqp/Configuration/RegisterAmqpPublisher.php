@@ -54,9 +54,9 @@ class RegisterAmqpPublisher
 
     /**
      * @param string $publisherReferenceName
-     * @param string $amqpConnectionReference
      * @param string $exchangeName
      * @param string|null $outputDefaultConversionMediaType
+     * @param string $amqpConnectionReference
      * @return RegisterAmqpPublisher
      */
     public static function create(string $publisherReferenceName, string $exchangeName = "", ?string $outputDefaultConversionMediaType = null, string $amqpConnectionReference = AmqpConnectionFactory::class): self
