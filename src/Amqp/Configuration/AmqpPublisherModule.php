@@ -96,7 +96,7 @@ class AmqpPublisherModule implements AnnotationModule
                     GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "convertAndSend", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, $mediaType)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerGatewayBuilder(
@@ -104,7 +104,7 @@ class AmqpPublisherModule implements AnnotationModule
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, $mediaType)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerMessageHandler(
@@ -114,6 +114,7 @@ class AmqpPublisherModule implements AnnotationModule
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend($amqpPublisher->isAutoDeclareQueueOnSend())
+                        ->withDefaultConversionMediaType($mediaType)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel($amqpPublisher->getReferenceName()));
         }

@@ -140,12 +140,12 @@ class AmqpOutboundChannelAdapter implements MessageHandler
                     $enqueueMessagePayload,
                     $sourceType,
                     $message->getHeaders()->getContentType(),
-                    TypeDescriptor::createStringType(),
-                    $this->defaultConversionMediaType
+                    $targetType,
+                    $mediaType
                 );
             } else {
-                throw new InvalidArgumentException("Can't send message to amqp channel. Payload has incorrect non-convertable type or converter is missing. 
-                 From {$sourceMediaType}:{$sourceType} to {$this->defaultConversionMediaType}:{$targetType} converted: " . TypeDescriptor::createFromVariable($enqueueMessagePayload)->toString());
+                throw new InvalidArgumentException("Can't send message to amqp channel. Payload has incorrect non-convertable type or converter is missing for: 
+                 From {$sourceMediaType}:{$sourceType} to {$this->defaultConversionMediaType}:{$targetType}");
             }
         }
 

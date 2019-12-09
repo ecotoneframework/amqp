@@ -55,7 +55,7 @@ class AmqpPublisherModuleTest extends TestCase
                     GatewayProxyBuilder::create(Publisher::class, Publisher::class, "convertAndSend", Publisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerGatewayBuilder(
@@ -63,7 +63,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerMessageHandler(
@@ -73,6 +73,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend(true)
+                        ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
             $this->prepareConfiguration(
@@ -107,7 +108,7 @@ class AmqpPublisherModuleTest extends TestCase
                     GatewayProxyBuilder::create(Publisher::class, Publisher::class, "convertAndSend", Publisher::class)
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerGatewayBuilder(
@@ -115,7 +116,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_JSON)
+                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerMessageHandler(
@@ -125,6 +126,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend(true)
+                        ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
             $this->prepareConfiguration(
@@ -183,8 +185,8 @@ class AmqpPublisherModuleTest extends TestCase
 
         $this->prepareConfiguration(
             [
-                RegisterAmqpPublisher::create("test", "amqpConnection", MediaType::APPLICATION_JSON, Publisher::class),
-                RegisterAmqpPublisher::create("test", "amqpConnection", MediaType::APPLICATION_JSON, Publisher::class)
+                RegisterAmqpPublisher::create("test", "amqpConnection", Publisher::class, MediaType::APPLICATION_JSON),
+                RegisterAmqpPublisher::create("test", "amqpConnection", Publisher::class, MediaType::APPLICATION_JSON)
             ]
         );
     }
