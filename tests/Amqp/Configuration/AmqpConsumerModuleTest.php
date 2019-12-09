@@ -40,7 +40,9 @@ class AmqpConsumerModuleTest extends TestCase
                     "input",
                     "endpointId",
                     "amqpConnection"
-                ))
+                )
+                    ->withHeaderMapper("ecotone.*")
+                )
                 ->registerMessageHandler(
                     ServiceActivatorBuilder::create(AmqpConsumerExample::class, "handle")
                         ->withEndpointId("endpointId.target")

@@ -28,4 +28,10 @@ class AmqpChannelAdapter extends ChannelAdapter
      * @var array
      */
     public $parameterConverters = [];
+    /**
+     * comma separated list of headers to be mapped. (e.g. "\*" or "thing1*, thing2" or "*thing1")
+     *
+     * @var string
+     */
+    public $headerMapper = "";
 }

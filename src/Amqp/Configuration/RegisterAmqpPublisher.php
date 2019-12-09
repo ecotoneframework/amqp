@@ -36,6 +36,10 @@ class RegisterAmqpPublisher
      * @var bool
      */
     private $autoDeclareQueueOnSend = false;
+    /**
+     * @var string
+     */
+    private $headerMapper = "";
 
     /**
      * RegisterAmqpPublisher constructor.
@@ -83,11 +87,32 @@ class RegisterAmqpPublisher
     }
 
     /**
+     * @param string $headerMapper comma separated list of headers to be mapped.
+     *                             (e.g. "\*" or "thing1*, thing2" or "*thing1")
+     *
+     * @return RegisterAmqpPublisher
+     */
+    public function withHeaderMapper(string $headerMapper) : RegisterAmqpPublisher
+    {
+        $this->headerMapper = $headerMapper;
+
+        return $this;
+    }
+
+    /**
      * @return bool
      */
     public function isAutoDeclareQueueOnSend(): bool
     {
         return $this->autoDeclareQueueOnSend;
+    }
+
+    /**
+     * @return string
+     */
+    public function getHeaderMapper(): string
+    {
+        return $this->headerMapper;
     }
 
     /**

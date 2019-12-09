@@ -72,7 +72,8 @@ class AmqpConsumerModule implements AnnotationModule
                 $amqpConsumerAnnotation->queueName,
                 $endpointId,
                 $amqpConsumerAnnotation->amqpConnectionReferenceName
-            );
+            )
+                ->withHeaderMapper($amqpConsumerAnnotation->headerMapper);
 
             $serviceActivators[] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
                                     ->withEndpointId($endpointId . ".target")

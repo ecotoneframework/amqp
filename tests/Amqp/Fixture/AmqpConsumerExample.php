@@ -24,7 +24,8 @@ class AmqpConsumerExample
      *     autoDeclareQueueOnSend=true,
      *     parameterConverters={
      *          @Payload(parameterName="object")
-     *     }
+     *     },
+     *     headerMapper="ecotone.*"
      * )
      * @param stdClass $object
      */

@@ -114,6 +114,7 @@ class AmqpPublisherModule implements AnnotationModule
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend($amqpPublisher->isAutoDeclareQueueOnSend())
+                        ->withHeaderMapper($amqpPublisher->getHeaderMapper())
                         ->withDefaultConversionMediaType($mediaType)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel($amqpPublisher->getReferenceName()));

@@ -73,6 +73,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend(true)
+                        ->withHeaderMapper("ecotone.*")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
@@ -80,6 +81,7 @@ class AmqpPublisherModuleTest extends TestCase
                 [
                     RegisterAmqpPublisher::create(Publisher::class, "exchangeName", MediaType::APPLICATION_JSON, "amqpConnection")
                         ->withAutoDeclareQueueOnSend(true)
+                        ->withHeaderMapper("ecotone.*")
                 ]
             )
         );
@@ -126,6 +128,7 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode(true)
                         ->withAutoDeclareOnSend(true)
+                        ->withHeaderMapper("")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(SimpleMessageChannelBuilder::createDirectMessageChannel(Publisher::class)),
