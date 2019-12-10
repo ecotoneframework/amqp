@@ -21,7 +21,7 @@ use Throwable;
  */
 class AmqpAcknowledgeConfirmationInterceptor
 {
-    const PRECEDENCE = ErrorChannelInterceptor::PRECEDENCE - 1;
+    const PRECEDENCE = ErrorChannelInterceptor::PRECEDENCE - 99;
 
     public static function createAroundInterceptor(string $interceptorName) : AroundInterceptorReference
     {

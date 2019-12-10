@@ -9,6 +9,7 @@ use Ecotone\Messaging\Endpoint\MessageHandlerConsumerBuilder;
 use Ecotone\Messaging\Endpoint\PollingConsumer\PollingConsumerBuilder;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\ChannelResolver;
+use Ecotone\Messaging\Handler\Gateway\ErrorChannelInterceptor;
 use Ecotone\Messaging\Handler\Logger\Annotation\LogError;
 use Ecotone\Messaging\Handler\Logger\ExceptionLoggingInterceptorBuilder;
 use Ecotone\Messaging\Handler\Logger\LoggingInterceptor;
@@ -43,7 +44,7 @@ class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
             "errorLog",
             new ExceptionLoggingInterceptorBuilder(),
             "logException",
-            -1,
+            ErrorChannelInterceptor::PRECEDENCE - 1,
             ""
         ));
 
