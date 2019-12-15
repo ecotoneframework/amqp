@@ -40,6 +40,14 @@ class RegisterAmqpPublisher
      * @var string
      */
     private $headerMapper = "";
+    /**
+     * @var string
+     */
+    private $defaultRoutingKey = "";
+    /**
+     * @var bool
+     */
+    private $defaultPersistentDelivery = true;
 
     /**
      * RegisterAmqpPublisher constructor.
@@ -83,7 +91,23 @@ class RegisterAmqpPublisher
     public function withAutoDeclareQueueOnSend(bool $autoDeclareQueueOnSend): RegisterAmqpPublisher
     {
         $this->autoDeclareQueueOnSend = $autoDeclareQueueOnSend;
+
         return $this;
+    }
+
+    public function withDefaultRoutingKey(string $defaultRoutingKey) : RegisterAmqpPublisher
+    {
+        $this->defaultRoutingKey = $defaultRoutingKey;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getDefaultRoutingKey(): string
+    {
+        return $this->defaultRoutingKey;
     }
 
     /**
@@ -97,6 +121,29 @@ class RegisterAmqpPublisher
         $this->headerMapper = $headerMapper;
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isDefaultPersistentDelivery(): bool
+    {
+        return $this->defaultPersistentDelivery;
+    }
+
+    /**
+     * @param bool $defaultPersistentDelivery
+     * @return RegisterAmqpPublisher
+     */
+    public function withDefaultPersistentDelivery(bool $defaultPersistentDelivery): RegisterAmqpPublisher
+    {
+        $this->defaultPersistentDelivery = $defaultPersistentDelivery;
+        return $this;
+    }
+
+    public function getDefaultPersistentDelivery() : bool
+    {
+        return $this->defaultPersistentDelivery;
     }
 
     /**
