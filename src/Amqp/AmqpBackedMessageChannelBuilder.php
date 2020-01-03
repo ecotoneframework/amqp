@@ -48,6 +48,14 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @var bool
      */
     private $isPublishSubscribe;
+    /**
+     * @var int
+     */
+    private $timeToLive = AmqpOutboundChannelAdapterBuilder::DEFAULT_TIME_TO_LIVE;
+    /**
+     * @var int
+     */
+    private $deliveryDelay = AmqpOutboundChannelAdapterBuilder::DEFAULT_DELIVERY_DELAY;
 
     /**
      * AmqpBackedMessageChannelBuilder constructor.
@@ -124,6 +132,20 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
         return $this;
     }
 
+    public function withDefaultTimeToLive(int $timeInMilliseconds) : self
+    {
+        $this->timeToLive = $timeInMilliseconds;
+
+        return $this;
+    }
+
+    public function withDefaultDeliveryDelay(int $timeInMilliseconds) : self
+    {
+        $this->deliveryDelay = $timeInMilliseconds;
+
+        return $this;
+    }
+
     /**
      * @inheritDoc
      */
@@ -180,6 +202,8 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
                 ->withDefaultConversionMediaType($this->defaultConversionMediaType);
         }
         $amqpOutboundChannelAdapter = $this->amqpOutboundChannelAdapter
+            ->withDefaultTimeToLive($this->timeToLive)
+            ->withDefaultDeliveryDelay($this->deliveryDelay)
             ->build(InMemoryChannelResolver::createEmpty(), $referenceSearchService);
 
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(

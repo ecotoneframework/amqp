@@ -25,6 +25,8 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
 {
     private const DEFAULT_PERSISTENT_MODE = true;
     const         DEFAULT_AUTO_DECLARE = false;
+    const DEFAULT_TIME_TO_LIVE = 0;
+    const DEFAULT_DELIVERY_DELAY = 0;
 
     /**
      * @var string
@@ -41,7 +43,7 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
     /**
      * @var string
      */
-    private $routingKey;
+    private $defaultRoutingKey;
     /**
      * @var string
      */
@@ -70,6 +72,14 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      * @var MediaType
      */
     private $defaultConversionMediaType;
+    /**
+     * @var int
+     */
+    private $defaultTimeToLive = self::DEFAULT_TIME_TO_LIVE;
+    /**
+     * @var int
+     */
+    private $defaultDeliveryDelay = self::DEFAULT_DELIVERY_DELAY;
 
     /**
      * OutboundAmqpGatewayBuilder constructor.
@@ -121,6 +131,20 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
         return [];
     }
 
+    public function withDefaultTimeToLive(int $timeInMilliseconds) : self
+    {
+        $this->defaultTimeToLive = $timeInMilliseconds;
+
+        return $this;
+    }
+
+    public function withDefaultDeliveryDelay(int $deliveryDelayInMilliseconds) : self
+    {
+        $this->defaultDeliveryDelay = $deliveryDelayInMilliseconds;
+
+        return $this;
+    }
+
     /**
      * @param string $routingKey
      *
@@ -128,7 +152,7 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
      */
     public function withDefaultRoutingKey(string $routingKey): self
     {
-        $this->routingKey = $routingKey;
+        $this->defaultRoutingKey = $routingKey;
 
         return $this;
     }
@@ -222,14 +246,16 @@ class AmqpOutboundChannelAdapterBuilder implements MessageHandlerBuilder
             $amqpConnectionFactory,
             $this->autoDeclare ? $referenceSearchService->get(AmqpAdmin::REFERENCE_NAME) : AmqpAdmin::createEmpty(),
             $this->exchangeName,
-            $this->routingKey,
+            $this->defaultRoutingKey,
             $this->routingKeyFromHeader,
             $this->exchangeFromHeader,
             $this->defaultPersistentDelivery,
             $this->autoDeclare,
             $this->headerMapper,
             $conversionService,
-            $this->defaultConversionMediaType
+            $this->defaultConversionMediaType,
+            $this->defaultTimeToLive,
+            $this->defaultDeliveryDelay
         );
     }
 

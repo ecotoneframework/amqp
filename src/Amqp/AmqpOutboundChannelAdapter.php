@@ -12,6 +12,7 @@ use Ecotone\Messaging\MessageHandler;
 use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpTools\RabbitMqDlxDelayStrategy;
 use Interop\Amqp\AmqpContext;
 use Interop\Amqp\AmqpMessage;
 use Interop\Amqp\Impl\AmqpTopic;
@@ -67,23 +68,16 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      * @var string|null
      */
     private $exchangeFromHeaderName;
-
     /**
-     * OutboundAmqpGateway constructor.
-     *
-     * @param AmqpConnectionFactory $amqpConnectionFactory
-     * @param AmqpAdmin $amqpAdmin
-     * @param string $exchangeName
-     * @param string|null $routingKey
-     * @param string|null $routingKeyFromHeaderName
-     * @param string|null $exchangeFromHeaderName
-     * @param bool $defaultPersistentDelivery
-     * @param bool $autoDeclare
-     * @param HeaderMapper $headerMapper
-     * @param ConversionService $conversionService
-     * @param MediaType $defaultConversionMediaType
+     * @var int
      */
-    public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType)
+    private $defaultTimeToLive;
+    /**
+     * @var int
+     */
+    private $defaultDeliveryDelay;
+
+    public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType, int $defaultTimeToLive, int $defaultDeliveryDelay)
     {
         $this->amqpConnectionFactory = $amqpConnectionFactory;
         $this->routingKey = $routingKey;
@@ -96,6 +90,8 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $this->conversionService = $conversionService;
         $this->defaultConversionMediaType = $defaultConversionMediaType;
         $this->exchangeFromHeaderName = $exchangeFromHeaderName;
+        $this->defaultTimeToLive = $defaultTimeToLive;
+        $this->defaultDeliveryDelay = $defaultDeliveryDelay;
     }
 
     /**
@@ -172,7 +168,11 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $messageToSend->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-        $context->createProducer()->send(new AmqpTopic($exchangeName), $messageToSend);
+        $context->createProducer()
+            ->setTimeToLive($this->defaultTimeToLive ? $this->defaultTimeToLive : null)
+            ->setDelayStrategy(new RabbitMqDlxDelayStrategy())
+            ->setDeliveryDelay($this->defaultDeliveryDelay ? $this->defaultDeliveryDelay : null)
+            ->send(new AmqpTopic($exchangeName), $messageToSend);
         $context->close();
     }
 }

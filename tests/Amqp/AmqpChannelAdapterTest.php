@@ -525,6 +525,73 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     /**
      * @throws MessagingException
      */
+    public function test_sending_with_time_to_live()
+    {
+        $queueName = Uuid::uuid4()->toString();
+        $amqpQueues = [AmqpQueue::createWith($queueName)->withExclusivity()];
+        $amqpExchanges = [];
+        $amqpBindings = [];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = DirectChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $messageToSend = MessageBuilder::withPayload("some")->build();
+        $converters = [];
+        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
+            ->withDefaultTimeToLive(1)
+            ->withDefaultRoutingKey($queueName);
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, $messageToSend);
+
+        $inboundAmqpAdapter = $this->createAmqpInboundAdapter($queueName, $requestChannelName, $amqpConnectionReferenceName);
+        $inboundQueueChannel = QueueChannel::create();
+        $inboundRequestChannel->subscribe(ForwardMessageHandler::create($inboundQueueChannel));
+
+        $inboundAmqpGateway = $inboundAmqpAdapter
+            ->build($inMemoryChannelResolver, $referenceSearchService, PollingMetadata::create("")->setExecutionTimeLimitInMilliseconds(1));
+        $inboundAmqpGateway->run();
+
+        $this->assertNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was did no expire");
+    }
+
+    /**
+     * @throws MessagingException
+     */
+    public function test_sending_with_delay()
+    {
+        $queueName = Uuid::uuid4()->toString();
+        $amqpQueues = [AmqpQueue::createWith($queueName)->withExclusivity()];
+        $amqpExchanges = [];
+        $amqpBindings = [];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = DirectChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $messageToSend = MessageBuilder::withPayload("some")->build();
+        $converters = [];
+        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
+            ->withDefaultDeliveryDelay(250)
+            ->withDefaultRoutingKey($queueName);
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, $messageToSend);
+
+        $inboundAmqpAdapter = $this->createAmqpInboundAdapter($queueName, $requestChannelName, $amqpConnectionReferenceName);
+        $inboundQueueChannel = QueueChannel::create();
+        $inboundRequestChannel->subscribe(ForwardMessageHandler::create($inboundQueueChannel));
+
+        $inboundAmqpGateway = $inboundAmqpAdapter
+            ->build($inMemoryChannelResolver, $referenceSearchService, PollingMetadata::create("")->setExecutionTimeLimitInMilliseconds(1));
+        $inboundAmqpGateway->run();
+        $this->assertNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was not delayed");
+        usleep(250000);
+        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was not delayed");
+    }
+
+    /**
+     * @throws MessagingException
+     */
     public function test_receiving_message_second_time_when_requeued()
     {
         $queueName = Uuid::uuid4()->toString();
