@@ -22,6 +22,14 @@ class AmqpQueue
      * @var bool
      */
     private $withDurability = self::DEFAULT_DURABILITY;
+    /**
+     * @var string|null
+     */
+    private $withDeadLetterExchange = null;
+    /**
+     * @var string|null
+     */
+    private $withDeadLetterRoutingKey = null;
 
     /**
      * AmqpQueue constructor.
@@ -59,8 +67,28 @@ class AmqpQueue
         if ($this->withDurability) {
             $amqpQueue->addFlag(EnqueueQueue::FLAG_DURABLE);
         }
+        if (!is_null($this->withDeadLetterExchange)) {
+            $amqpQueue->setArgument('x-dead-letter-exchange', $this->withDeadLetterExchange);
+        }
+        if ($this->withDeadLetterRoutingKey) {
+            $amqpQueue->setArgument('x-dead-letter-routing-key', $this->withDeadLetterRoutingKey);
+        }
 
         return $amqpQueue;
+    }
+
+    public function withDeadLetterExchangeTarget(AmqpExchange $amqpExchange, ?string $routingKey = null) : self
+    {
+        $this->withDeadLetterExchange = $amqpExchange->getExchangeName();
+        $this->withDeadLetterRoutingKey = $routingKey;
+    }
+
+    public function withDeadLetterForDefaultExchange(AmqpQueue $amqpQueue) : self
+    {
+        $this->withDeadLetterExchange = "";
+        $this->withDeadLetterRoutingKey = $amqpQueue->getQueueName();
+
+        return $this;
     }
 
     /**
