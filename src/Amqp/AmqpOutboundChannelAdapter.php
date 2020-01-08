@@ -3,14 +3,11 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Ecotone\Messaging\Conversion\ConversionService;
-use Ecotone\Messaging\Conversion\MediaType;
-use Ecotone\Messaging\Handler\TypeDescriptor;
+use Ecotone\Enqueue\CachedConnectionFactory;
+use Ecotone\Enqueue\OutboundMessageConverter;
+use Ecotone\Enqueue\ReconnectableConnectionFactory;
 use Ecotone\Messaging\Message;
-use Ecotone\Messaging\MessageConverter\HeaderMapper;
 use Ecotone\Messaging\MessageHandler;
-use Ecotone\Messaging\MessageHeaders;
-use Ecotone\Messaging\Support\InvalidArgumentException;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Enqueue\AmqpTools\RabbitMqDlxDelayStrategy;
 use Interop\Amqp\AmqpContext;
@@ -25,9 +22,9 @@ use Interop\Amqp\Impl\AmqpTopic;
 class AmqpOutboundChannelAdapter implements MessageHandler
 {
     /**
-     * @var AmqpConnectionFactory
+     * @var CachedConnectionFactory
      */
-    private $amqpConnectionFactory;
+    private $connectionFactory;
     /**
      * @var string|null
      */
@@ -45,10 +42,6 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     private $defaultPersistentDelivery;
     /**
-     * @var HeaderMapper
-     */
-    private $headerMapper;
-    /**
      * @var bool
      */
     private $autoDeclare;
@@ -57,41 +50,39 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     private $routingKeyFromHeaderName;
     /**
-     * @var ConversionService
-     */
-    private $conversionService;
-    /**
-     * @var MediaType
-     */
-    private $defaultConversionMediaType;
-    /**
      * @var string|null
      */
     private $exchangeFromHeaderName;
     /**
-     * @var int
+     * @var int|null
      */
     private $defaultTimeToLive;
     /**
-     * @var int
+     * @var int|null
      */
     private $defaultDeliveryDelay;
+    /**
+     * @var OutboundMessageConverter
+     */
+    private $outboundMessageConverter;
+    /**
+     * @var bool
+     */
+    private $initialized = false;
 
-    public function __construct(AmqpConnectionFactory $amqpConnectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType, int $defaultTimeToLive, int $defaultDeliveryDelay)
+    public function __construct(CachedConnectionFactory $connectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, OutboundMessageConverter $outboundMessageConverter, ?int $defaultTimeToLive, ?int $defaultDeliveryDelay)
     {
-        $this->amqpConnectionFactory = $amqpConnectionFactory;
+        $this->connectionFactory = $connectionFactory;
         $this->routingKey = $routingKey;
         $this->exchangeName = $exchangeName;
         $this->amqpAdmin = $amqpAdmin;
         $this->defaultPersistentDelivery = $defaultPersistentDelivery;
-        $this->headerMapper = $headerMapper;
         $this->autoDeclare = $autoDeclare;
         $this->routingKeyFromHeaderName = $routingKeyFromHeaderName;
-        $this->conversionService = $conversionService;
-        $this->defaultConversionMediaType = $defaultConversionMediaType;
         $this->exchangeFromHeaderName = $exchangeFromHeaderName;
         $this->defaultTimeToLive = $defaultTimeToLive;
         $this->defaultDeliveryDelay = $defaultDeliveryDelay;
+        $this->outboundMessageConverter = $outboundMessageConverter;
     }
 
     /**
@@ -99,58 +90,17 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     public function handle(Message $message): void
     {
-        /** @var AmqpContext $context */
-        $context = $this->amqpConnectionFactory->createContext();
-
         $exchangeName = $this->exchangeName;
         if ($this->exchangeFromHeaderName) {
             $exchangeName = $message->getHeaders()->containsKey($this->exchangeFromHeaderName) ? $message->getHeaders()->get($this->exchangeFromHeaderName) : $this->exchangeName;
         }
-        if ($this->autoDeclare) {
-            $this->amqpAdmin->declareExchangeWithQueuesAndBindings($exchangeName, $context);
+        if (!$this->initialized && $this->autoDeclare) {
+            $this->amqpAdmin->declareExchangeWithQueuesAndBindings($exchangeName, $this->connectionFactory->createContext());
+            $this->initialized = true;
         }
 
-        $applicationHeaders = $this->headerMapper->mapFromMessageHeaders($message->getHeaders()->headers());
-
-        $enqueueMessagePayload = $message->getPayload();
-        $mediaType = $message->getHeaders()->hasContentType() ? $message->getHeaders()->getContentType() : null;
-        if (!is_string($enqueueMessagePayload)) {
-            if (!$message->getHeaders()->hasContentType()) {
-                throw new InvalidArgumentException("Can't send message to amqp channel. Payload has incorrect type, that can't be converted: " . TypeDescriptor::createFromVariable($enqueueMessagePayload)->toString());
-            }
-
-            $sourceType = $message->getHeaders()->getContentType()->hasTypeParameter() ? $message->getHeaders()->getContentType()->getTypeParameter() : TypeDescriptor::createFromVariable($enqueueMessagePayload);
-            $sourceMediaType = $message->getHeaders()->getContentType();
-            $targetType = TypeDescriptor::createStringType();
-
-            if ($this->conversionService->canConvert(
-                $sourceType,
-                $sourceMediaType,
-                $targetType,
-                $this->defaultConversionMediaType
-            )) {
-                $applicationHeaders[MessageHeaders::TYPE_ID] = TypeDescriptor::createFromVariable($enqueueMessagePayload)->toString();
-
-                $mediaType = $this->defaultConversionMediaType;
-                $enqueueMessagePayload = $this->conversionService->convert(
-                    $enqueueMessagePayload,
-                    $sourceType,
-                    $message->getHeaders()->getContentType(),
-                    $targetType,
-                    $mediaType
-                );
-            } else {
-                throw new InvalidArgumentException("Can't send message to amqp channel. Payload has incorrect non-convertable type or converter is missing for: 
-                 From {$sourceMediaType}:{$sourceType} to {$this->defaultConversionMediaType}:{$targetType}");
-            }
-        }
-
-        if ($message->getHeaders()->containsKey(MessageHeaders::ROUTING_SLIP)) {
-            $applicationHeaders[MessageHeaders::ROUTING_SLIP] = $message->getHeaders()->get(MessageHeaders::ROUTING_SLIP);
-        }
-
-        $messageToSend = new \Interop\Amqp\Impl\AmqpMessage($enqueueMessagePayload, $applicationHeaders, []);
-
+        $outboundMessage = $this->outboundMessageConverter->prepare($message);
+        $messageToSend = new \Interop\Amqp\Impl\AmqpMessage($outboundMessage->getPayload(), $outboundMessage->getHeaders(), []);
 
         if ($this->routingKeyFromHeaderName) {
             $routingKey = $message->getHeaders()->containsKey($this->routingKeyFromHeaderName) ? $message->getHeaders()->get($this->routingKeyFromHeaderName) : $this->routingKey;
@@ -158,21 +108,22 @@ class AmqpOutboundChannelAdapter implements MessageHandler
             $routingKey = $this->routingKey;
         }
 
-        if ($mediaType) {
-            $messageToSend->setContentType($mediaType->toString());
+        if ($outboundMessage->getContentType()) {
+            $messageToSend->setContentType($outboundMessage->getContentType());
         }
 
         if (!is_null($routingKey) && $routingKey !== "") {
             $messageToSend->setRoutingKey($routingKey);
         }
 
-        $messageToSend->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
+        $messageToSend
+            ->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-        $context->createProducer()
-            ->setTimeToLive($this->defaultTimeToLive ? $this->defaultTimeToLive : null)
+
+        $this->connectionFactory->getProducer()
+            ->setTimeToLive($this->defaultTimeToLive)
             ->setDelayStrategy(new RabbitMqDlxDelayStrategy())
-            ->setDeliveryDelay($this->defaultDeliveryDelay ? $this->defaultDeliveryDelay : null)
+            ->setDeliveryDelay($this->defaultDeliveryDelay)
             ->send(new AmqpTopic($exchangeName), $messageToSend);
-        $context->close();
     }
 }

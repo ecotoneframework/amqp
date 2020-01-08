@@ -1,8 +1,9 @@
 <?php
 
 
-namespace Ecotone\Amqp;
+namespace Ecotone\Enqueue;
 
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
 use Ecotone\Messaging\Endpoint\MessageHandlerConsumerBuilder;
@@ -10,9 +11,7 @@ use Ecotone\Messaging\Endpoint\PollingConsumer\PollingConsumerBuilder;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\Gateway\ErrorChannelInterceptor;
-use Ecotone\Messaging\Handler\Logger\Annotation\LogError;
 use Ecotone\Messaging\Handler\Logger\ExceptionLoggingInterceptorBuilder;
-use Ecotone\Messaging\Handler\Logger\LoggingInterceptor;
 use Ecotone\Messaging\Handler\MessageHandlerBuilder;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
@@ -22,14 +21,14 @@ use Ecotone\Messaging\Handler\ReferenceSearchService;
  * @package Ecotone\Amqp
  * @author  Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
+class EnqueueBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
 {
     /**
      * @inheritDoc
      */
     public function isSupporting(MessageHandlerBuilder $messageHandlerBuilder, MessageChannelBuilder $relatedMessageChannel): bool
     {
-        return $relatedMessageChannel instanceof AmqpBackedMessageChannelBuilder;
+        return $relatedMessageChannel instanceof AmqpBackedMessageChannelBuilderBuilder;
     }
 
     /**
@@ -39,7 +38,7 @@ class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
     {
         $pollingConsumerBuilder = new PollingConsumerBuilder();
 
-        $pollingConsumerBuilder->addAroundInterceptor(AmqpAcknowledgeConfirmationInterceptor::createAroundInterceptor($messageHandlerBuilder->getEndpointId()));
+        $pollingConsumerBuilder->addAroundInterceptor(EnqueueAcknowledgeConfirmationInterceptor::createAroundInterceptor($messageHandlerBuilder->getEndpointId()));
         $pollingConsumerBuilder->addAroundInterceptor(AroundInterceptorReference::createWithObjectBuilder(
             "errorLog",
             new ExceptionLoggingInterceptorBuilder(),
@@ -48,6 +47,11 @@ class AmqpBackendMessageChannelConsumer implements MessageHandlerConsumerBuilder
             ""
         ));
 
+        return $this->buildConsumerFrom($channelResolver, $referenceSearchService, $messageHandlerBuilder, $pollingMetadata, $pollingConsumerBuilder);
+    }
+
+    protected function buildConsumerFrom(ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, MessageHandlerBuilder $messageHandlerBuilder, PollingMetadata $pollingMetadata, PollingConsumerBuilder $pollingConsumerBuilder): ConsumerLifecycle
+    {
         return $pollingConsumerBuilder->build($channelResolver, $referenceSearchService, $messageHandlerBuilder, $pollingMetadata);
     }
 }

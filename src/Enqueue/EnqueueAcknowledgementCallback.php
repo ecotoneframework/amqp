@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 
-namespace Ecotone\Amqp;
+namespace Ecotone\Enqueue;
 
+use Ecotone\Messaging\Endpoint\AcknowledgementCallback;
 use Interop\Queue\Consumer as EnqueueConsumer;
 use Interop\Queue\Message as EnqueueMessage;
-use Ecotone\Messaging\Endpoint\AcknowledgementCallback;
 
 /**
  * Class EnqueueAcknowledgementCallback
  * @package Ecotone\Amqp
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpAcknowledgementCallback implements AcknowledgementCallback
+class EnqueueAcknowledgementCallback implements AcknowledgementCallback
 {
     const AUTO_ACK = "auto";
     const MANUAL_ACK = "manual";
@@ -47,7 +47,7 @@ class AmqpAcknowledgementCallback implements AcknowledgementCallback
     /**
      * @param EnqueueConsumer $enqueueConsumer
      * @param EnqueueMessage $enqueueMessage
-     * @return AmqpAcknowledgementCallback
+     * @return EnqueueAcknowledgementCallback
      */
     public static function createWithAutoAck(EnqueueConsumer $enqueueConsumer, EnqueueMessage $enqueueMessage) : self
     {
@@ -57,7 +57,7 @@ class AmqpAcknowledgementCallback implements AcknowledgementCallback
     /**
      * @param EnqueueConsumer $enqueueConsumer
      * @param EnqueueMessage $enqueueMessage
-     * @return AmqpAcknowledgementCallback
+     * @return EnqueueAcknowledgementCallback
      */
     public static function createWithManualAck(EnqueueConsumer $enqueueConsumer, EnqueueMessage $enqueueMessage) : self
     {

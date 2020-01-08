@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Test\Ecotone\Amqp;
 
 use Ecotone\Amqp\AmqpAdmin;
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
 use Ecotone\Amqp\AmqpBackendMessageChannel;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
@@ -772,7 +772,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
             []
         );
 
-        return AmqpBackedMessageChannelBuilder::createDirectChannel($queueName, $amqpConnectionReferenceName)
+        return AmqpBackedMessageChannelBuilderBuilder::createDirectChannel($queueName, $amqpConnectionReferenceName)
             ->withReceiveTimeout(1)
             ->build($referenceSearchService);
     }
@@ -787,7 +787,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     private function createPublishSubscribeAmqpBackendMessageChannel(string $queueName, array $endpointIds): AmqpBackendMessageChannel
     {
         $amqpConnectionReferenceName = "amqpConnectionName";
-        $exchangeName = AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $queueName;
+        $exchangeName = AmqpBackedMessageChannelBuilderBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $queueName;
 
         $queues = [];
         $bindings = [];
@@ -804,7 +804,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
             []
         );
 
-        return AmqpBackedMessageChannelBuilder::createPublishSubscribe($queueName, $amqpConnectionReferenceName)
+        return AmqpBackedMessageChannelBuilderBuilder::createPublishSubscribe($queueName, $amqpConnectionReferenceName)
             ->withReceiveTimeout(1)
             ->build($referenceSearchService);
     }

@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp\Configuration;
 
-use Ecotone\Amqp\AmqpAcknowledgeConfirmationInterceptor;
 use Ecotone\Amqp\AmqpAdmin;
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Amqp\AmqpBackendMessageChannelConsumer;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Enqueue\EnqueueAcknowledgeConfirmationInterceptor;
+use Ecotone\Enqueue\EnqueueBackendMessageChannelConsumer;
 use Ecotone\Messaging\Annotation\InputOutputEndpointAnnotation;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
@@ -18,11 +18,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
-use Ecotone\Messaging\Config\OptionalReference;
-use Ecotone\Messaging\Config\RequiredReference;
 use Ecotone\Messaging\Handler\InterfaceToCall;
-use Ecotone\Messaging\Handler\MessageHandlerBuilder;
-use Ecotone\Messaging\Handler\ReferenceSearchService;
 
 /**
  * Class AmqpModule
@@ -83,7 +79,7 @@ class AmqpModule implements AnnotationModule
         $amqpBindings = [];
 
         foreach ($extensionObjects as $extensionObject) {
-            if ($extensionObject instanceof AmqpBackedMessageChannelBuilder) {
+            if ($extensionObject instanceof AmqpBackedMessageChannelBuilderBuilder) {
                 if (!$extensionObject->getDefaultConversionMediaType()) {
                     foreach ($extensionObjects as $extensionObjectToCheck) {
                         if ($extensionObjectToCheck instanceof ApplicationConfiguration) {
@@ -94,7 +90,7 @@ class AmqpModule implements AnnotationModule
 
                 if ($extensionObject->isPublishSubscribe()) {
                     $publishSubscribeExchanges[] = $extensionObject->getMessageChannelName();
-                    $amqpExchanges[] = AmqpExchange::createFanoutExchange(AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName());
+                    $amqpExchanges[] = AmqpExchange::createFanoutExchange(AmqpBackedMessageChannelBuilderBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $extensionObject->getMessageChannelName());
                 }else {
                     $amqpQueues[] = AmqpQueue::createWith($extensionObject->getMessageChannelName());
                 }
@@ -112,15 +108,15 @@ class AmqpModule implements AnnotationModule
                     $queueName = $inputChannelName . "." . $endpoint;
                     $amqpQueues[] = AmqpQueue::createWith($queueName);
                     $amqpBindings[] = AmqpBinding::createFromNamesWithoutRoutingKey(
-                        AmqpBackedMessageChannelBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $inputChannelName,
+                        AmqpBackedMessageChannelBuilderBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $inputChannelName,
                         $queueName
                     );
                 }
             }
         }
 
-        $configuration->registerRelatedInterfaces([InterfaceToCall::create(AmqpAcknowledgeConfirmationInterceptor::class, "ack")]);
-        $configuration->registerConsumerFactory(new AmqpBackendMessageChannelConsumer());
+        $configuration->registerRelatedInterfaces([InterfaceToCall::create(EnqueueAcknowledgeConfirmationInterceptor::class, "ack")]);
+        $configuration->registerConsumerFactory(new EnqueueBackendMessageChannelConsumer());
         $moduleReferenceSearchService->store(AmqpAdmin::REFERENCE_NAME, AmqpAdmin::createWith(
             $amqpExchanges, $amqpQueues, $amqpBindings
         ));
@@ -132,7 +128,7 @@ class AmqpModule implements AnnotationModule
     public function canHandle($extensionObject): bool
     {
         return
-            $extensionObject instanceof AmqpBackedMessageChannelBuilder
+            $extensionObject instanceof AmqpBackedMessageChannelBuilderBuilder
             || $extensionObject instanceof AmqpExchange
             || $extensionObject instanceof AmqpQueue
             || $extensionObject instanceof AmqpBinding

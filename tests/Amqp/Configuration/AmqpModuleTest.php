@@ -3,7 +3,7 @@
 namespace Test\Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpAdmin;
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
@@ -34,7 +34,7 @@ class AmqpModuleTest extends TestCase
             AmqpAdmin::createWith([], [AmqpQueue::createWith("some")], []),
             $this->prepareConfigurationAndRetrieveAmqpAdmin(
                 [
-                    AmqpBackedMessageChannelBuilder::createDirectChannel("some", "amqpConnection")
+                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some", "amqpConnection")
                 ]
             )
         );
@@ -45,17 +45,17 @@ class AmqpModuleTest extends TestCase
         $this->assertEquals(
             $this->createMessagingSystemConfiguration()
                 ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilder::createDirectChannel("some1", "amqpConnection")
+                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some1", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilder::createDirectChannel("some2", "amqpConnection")
+                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some2", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED)
                 ),
             $this->prepareConfiguration(
                 [
-                    AmqpBackedMessageChannelBuilder::createDirectChannel("some1", "amqpConnection"),
-                    AmqpBackedMessageChannelBuilder::createDirectChannel("some2", "amqpConnection")
+                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some1", "amqpConnection"),
+                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some2", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED),
                     ApplicationConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)

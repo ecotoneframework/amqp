@@ -3,7 +3,7 @@
 
 namespace Test\Ecotone\Amqp\Fixture\Order;
 
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
 use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Annotation\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
@@ -19,9 +19,9 @@ class ChannelConfiguration
     /**
      * @Extension()
      */
-    public function registerCommandChannel() : AmqpBackedMessageChannelBuilder
+    public function registerCommandChannel() : AmqpBackedMessageChannelBuilderBuilder
     {
-        return AmqpBackedMessageChannelBuilder::createDirectChannel("order.register");
+        return AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("order.register");
     }
 
     /**
@@ -30,7 +30,7 @@ class ChannelConfiguration
     public function registerAsyncChannel() : array
     {
         return [
-            AmqpBackedMessageChannelBuilder::createDirectChannel("orders")
+            AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("orders")
                 ->withReceiveTimeout(100),
             PollingMetadata::create("orders")
                 ->setExecutionTimeLimitInMilliseconds(1)

@@ -2,15 +2,15 @@
 declare(strict_types=1);
 
 
-namespace Ecotone\Amqp;
+namespace Ecotone\Enqueue;
 
-use Ramsey\Uuid\Uuid;
+use Ecotone\Amqp\AmqpHeader;
 use Ecotone\Messaging\Endpoint\AcknowledgementCallback;
-use Ecotone\Messaging\Endpoint\InterceptedConsumer;
 use Ecotone\Messaging\Handler\Gateway\ErrorChannelInterceptor;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInvocation;
 use Ecotone\Messaging\Message;
+use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagingException;
 use Throwable;
 
@@ -19,7 +19,7 @@ use Throwable;
  * @package Ecotone\Amqp
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpAcknowledgeConfirmationInterceptor
+class EnqueueAcknowledgeConfirmationInterceptor
 {
     const PRECEDENCE = ErrorChannelInterceptor::PRECEDENCE - 99;
 
@@ -38,7 +38,7 @@ class AmqpAcknowledgeConfirmationInterceptor
     public function ack(MethodInvocation $methodInvocation, Message $message)
     {
         /** @var AcknowledgementCallback $amqpAcknowledgementCallback */
-        $amqpAcknowledgementCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
+        $amqpAcknowledgementCallback = $message->getHeaders()->get($message->getHeaders()->get(MessageHeaders::CONSUMER_ACK_HEADER_LOCATION));
         try {
             $result = $methodInvocation->proceed();
 

@@ -3,6 +3,10 @@
 
 namespace Ecotone\Amqp;
 
+use Ecotone\Enqueue\CachedConnectionFactory;
+use Ecotone\Enqueue\EnqueueAcknowledgementCallback;
+use Ecotone\Enqueue\EnqueueBackendMessageChannelBuilder;
+use Ecotone\Enqueue\InboundMessageConverter;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
 use Ecotone\Messaging\Conversion\MediaType;
@@ -20,26 +24,14 @@ use Enqueue\AmqpLib\AmqpConnectionFactory;
  * @package Ecotone\Amqp
  * @author  Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
+class AmqpBackedMessageChannelBuilderBuilder extends EnqueueBackendMessageChannelBuilder
 {
     const PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX = "ecotone.fanout.";
 
     /**
      * @var string
      */
-    private $channelName;
-    /**
-     * @var string
-     */
     private $amqpConnectionReferenceName;
-    /**
-     * @var int
-     */
-    private $receiveTimeoutInMilliseconds = AmqpInboundChannelAdapterBuilder::DEFAULT_RECEIVE_TIMEOUT;
-    /**
-     * @var MediaType|null
-     */
-    private $defaultConversionMediaType;
     /**
      * @var AmqpOutboundChannelAdapterBuilder
      */
@@ -48,14 +40,6 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
      * @var bool
      */
     private $isPublishSubscribe;
-    /**
-     * @var int
-     */
-    private $timeToLive = AmqpOutboundChannelAdapterBuilder::DEFAULT_TIME_TO_LIVE;
-    /**
-     * @var int
-     */
-    private $deliveryDelay = AmqpOutboundChannelAdapterBuilder::DEFAULT_DELIVERY_DELAY;
 
     /**
      * AmqpBackedMessageChannelBuilder constructor.
@@ -83,13 +67,15 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
             ->withAutoDeclareOnSend(true)
             ->withHeaderMapper("*")
             ->withDefaultPersistentMode(true);
+
+        $this->initialize($amqpConnectionReferenceName);
     }
 
     /**
      * @param string $channelName
      * @param string $amqpConnectionReferenceName
      *
-     * @return AmqpBackedMessageChannelBuilder
+     * @return AmqpBackedMessageChannelBuilderBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
@@ -101,7 +87,7 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
     /**
      * @param string $channelName
      * @param string $amqpConnectionReferenceName
-     * @return AmqpBackedMessageChannelBuilder
+     * @return AmqpBackedMessageChannelBuilderBuilder
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
@@ -116,69 +102,6 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
     public function isPublishSubscribe(): bool
     {
         return $this->isPublishSubscribe;
-    }
-
-    /**
-     * How long it should try to receive message
-     *
-     * @param int $timeoutInMilliseconds
-     *
-     * @return AmqpBackedMessageChannelBuilder
-     */
-    public function withReceiveTimeout(int $timeoutInMilliseconds): self
-    {
-        $this->receiveTimeoutInMilliseconds = $timeoutInMilliseconds;
-
-        return $this;
-    }
-
-    public function withDefaultTimeToLive(int $timeInMilliseconds) : self
-    {
-        $this->timeToLive = $timeInMilliseconds;
-
-        return $this;
-    }
-
-    public function withDefaultDeliveryDelay(int $timeInMilliseconds) : self
-    {
-        $this->deliveryDelay = $timeInMilliseconds;
-
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function isPollable(): bool
-    {
-        return true;
-    }
-
-    /**
-     * @param string $mediaType
-     *
-     * @return AmqpBackedMessageChannelBuilder
-     * @throws InvalidArgumentException
-     * @throws MessagingException
-     */
-    public function withDefaultConversionMediaType(string $mediaType): self
-    {
-        $this->defaultConversionMediaType = MediaType::parseMediaType($mediaType);
-
-        return $this;
-    }
-
-    public function getDefaultConversionMediaType(): ?MediaType
-    {
-        return $this->defaultConversionMediaType;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getMessageChannelName(): string
-    {
-        return $this->channelName;
     }
 
     public function resolveRelatedInterfaces(InterfaceToCallRegistry $interfaceToCallRegistry): iterable
@@ -207,25 +130,20 @@ class AmqpBackedMessageChannelBuilder implements MessageChannelBuilder
             ->build(InMemoryChannelResolver::createEmpty(), $referenceSearchService);
 
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
-            $amqpConnectionFactory,
+            new CachedConnectionFactory(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
             NullEntrypointGateway::create(),
             $amqpAdmin,
             true,
             $this->channelName,
             $this->receiveTimeoutInMilliseconds,
-            AmqpAcknowledgementCallback::AUTO_ACK,
-            DefaultHeaderMapper::createAllHeadersMapping(),
+            new InboundMessageConverter(
+                EnqueueAcknowledgementCallback::AUTO_ACK,
+                AmqpHeader::HEADER_ACKNOWLEDGE,
+                DefaultHeaderMapper::createAllHeadersMapping(),
+            ),
             $this->isPublishSubscribe
         );
 
         return new AmqpBackendMessageChannel($inboundChannelAdapter, $amqpOutboundChannelAdapter);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getRequiredReferenceNames(): array
-    {
-        return [$this->amqpConnectionReferenceName];
     }
 }

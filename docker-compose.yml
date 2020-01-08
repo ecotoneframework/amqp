@@ -21,3 +21,10 @@ services:
       - default
     ports:
       - "15673:15672"
+  database:
+    image: postgres:12.1
+    networks:
+      - default
+    environment:
+      POSTGRES_USER: "ecotone"
+      POSTGRES_PASSWORD: "secret"
