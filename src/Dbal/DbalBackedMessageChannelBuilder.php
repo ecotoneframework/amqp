@@ -4,6 +4,7 @@
 namespace Ecotone\Dbal;
 
 
+use Ecotone\Enqueue\EnqueueMessageChannelBuilder;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
 use Ecotone\Messaging\Conversion\MediaType;
@@ -14,7 +15,7 @@ use Ecotone\Messaging\MessageChannel;
 use Enqueue\Dbal\DbalConnectionFactory;
 use Ramsey\Uuid\Uuid;
 
-class DbalBackedMessageChannelBuilder implements MessageChannelBuilder
+class DbalBackedMessageChannelBuilder implements EnqueueMessageChannelBuilder
 {
     /**
      * @var DbalInboundChannelAdapterBuilder

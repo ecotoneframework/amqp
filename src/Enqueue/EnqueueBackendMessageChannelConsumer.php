@@ -3,7 +3,7 @@
 
 namespace Ecotone\Enqueue;
 
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Messaging\Channel\MessageChannelBuilder;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
 use Ecotone\Messaging\Endpoint\MessageHandlerConsumerBuilder;
@@ -28,7 +28,7 @@ class EnqueueBackendMessageChannelConsumer implements MessageHandlerConsumerBuil
      */
     public function isSupporting(MessageHandlerBuilder $messageHandlerBuilder, MessageChannelBuilder $relatedMessageChannel): bool
     {
-        return $relatedMessageChannel instanceof AmqpBackedMessageChannelBuilderBuilder;
+        return $relatedMessageChannel instanceof EnqueueMessageChannelBuilder;
     }
 
     /**

@@ -167,7 +167,7 @@ abstract class EnqueueOutboundChannelAdapterBuilder implements MessageHandlerBui
      */
     public function getRequiredReferenceNames(): array
     {
-        return [$this->requiredReferenceNames];
+        return $this->requiredReferenceNames;
     }
 
     public function __toString()

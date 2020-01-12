@@ -84,7 +84,7 @@ abstract class EnqueueInboundChannelAdapterBuilder extends InterceptedChannelAda
      */
     public function resolveRelatedInterfaces(InterfaceToCallRegistry $interfaceToCallRegistry): iterable
     {
-        $resolvedInterfaces = $this->inboundEntrypoint->resolveRelatedInterfaces($interfaceToCallRegistry);
+        $resolvedInterfaces = $this->isNullableGateway() ? [] : $this->inboundEntrypoint->resolveRelatedInterfaces($interfaceToCallRegistry);
         $resolvedInterfaces[] = $interfaceToCallRegistry->getFor(EntrypointGateway::class, 'executeEntrypoint');
 
         return $resolvedInterfaces;
@@ -127,7 +127,7 @@ abstract class EnqueueInboundChannelAdapterBuilder extends InterceptedChannelAda
      */
     public function getRequiredReferences(): array
     {
-        return array_merge($this->requiredReferenceNames, $this->inboundEntrypoint->getRequiredReferences());
+        return array_merge($this->requiredReferenceNames, $this->isNullableGateway() ? [] : $this->inboundEntrypoint->getRequiredReferences());
     }
 
     /**

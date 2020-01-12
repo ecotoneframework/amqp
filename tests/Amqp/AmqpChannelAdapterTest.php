@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Test\Ecotone\Amqp;
 
 use Ecotone\Amqp\AmqpAdmin;
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBackendMessageChannel;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
@@ -731,32 +731,6 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
     }
 
     /**
-     * @throws MessagingException
-     */
-    public function test_receiving_message_second_time_from_second_consumer()
-    {
-        $queueName = Uuid::uuid4()->toString();
-
-        $amqpBackedMessageChannel = $this->createPublishSubscribeAmqpBackendMessageChannel($queueName, ["1", "2"]);
-
-        $amqpBackedMessageChannel->send(MessageBuilder::withPayload("some")->build());
-
-        /** @var Message $message */
-        $message = $amqpBackedMessageChannel->receiveWithEndpointId("1");
-        /** @var AcknowledgementCallback $acknowledgeCallback */
-        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
-        $acknowledgeCallback->accept();
-        $this->assertNull($amqpBackedMessageChannel->receiveWithEndpointId("1"));
-
-        /** @var Message $message */
-        $message = $amqpBackedMessageChannel->receiveWithEndpointId("2");
-        /** @var AcknowledgementCallback $acknowledgeCallback */
-        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
-        $acknowledgeCallback->accept();
-        $this->assertNull($amqpBackedMessageChannel->receiveWithEndpointId("2"));
-    }
-
-    /**
      * @param string $queueName
      * @return AmqpBackendMessageChannel
      * @throws MessagingException
@@ -772,39 +746,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
             []
         );
 
-        return AmqpBackedMessageChannelBuilderBuilder::createDirectChannel($queueName, $amqpConnectionReferenceName)
-            ->withReceiveTimeout(1)
-            ->build($referenceSearchService);
-    }
-
-    /**
-     * @param string $queueName
-     * @param array $endpointIds
-     * @return AmqpBackendMessageChannel
-     * @throws InvalidArgumentException
-     * @throws MessagingException
-     */
-    private function createPublishSubscribeAmqpBackendMessageChannel(string $queueName, array $endpointIds): AmqpBackendMessageChannel
-    {
-        $amqpConnectionReferenceName = "amqpConnectionName";
-        $exchangeName = AmqpBackedMessageChannelBuilderBuilder::PUBLISH_SUBSCRIBE_EXCHANGE_NAME_PREFIX . $queueName;
-
-        $queues = [];
-        $bindings = [];
-        foreach ($endpointIds as $endpointId) {
-            $amqpQueueName = $queueName . "." . $endpointId;
-            $queues[] = AmqpQueue::createWith($amqpQueueName);
-            $bindings[] = AmqpBinding::createFromNamesWithoutRoutingKey($exchangeName, $amqpQueueName);
-        }
-        $referenceSearchService = $this->createReferenceSearchService(
-            $amqpConnectionReferenceName,
-            [AmqpExchange::createFanoutExchange($exchangeName)],
-            $queues,
-            $bindings,
-            []
-        );
-
-        return AmqpBackedMessageChannelBuilderBuilder::createPublishSubscribe($queueName, $amqpConnectionReferenceName)
+        return AmqpBackedMessageChannelBuilder::create($queueName, $amqpConnectionReferenceName)
             ->withReceiveTimeout(1)
             ->build($referenceSearchService);
     }

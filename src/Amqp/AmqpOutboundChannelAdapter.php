@@ -54,14 +54,6 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     private $exchangeFromHeaderName;
     /**
-     * @var int|null
-     */
-    private $defaultTimeToLive;
-    /**
-     * @var int|null
-     */
-    private $defaultDeliveryDelay;
-    /**
      * @var OutboundMessageConverter
      */
     private $outboundMessageConverter;
@@ -70,7 +62,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
      */
     private $initialized = false;
 
-    public function __construct(CachedConnectionFactory $connectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, OutboundMessageConverter $outboundMessageConverter, ?int $defaultTimeToLive, ?int $defaultDeliveryDelay)
+    public function __construct(CachedConnectionFactory $connectionFactory, AmqpAdmin $amqpAdmin, string $exchangeName, ?string $routingKey, ?string $routingKeyFromHeaderName, ?string $exchangeFromHeaderName, bool $defaultPersistentDelivery, bool $autoDeclare, OutboundMessageConverter $outboundMessageConverter)
     {
         $this->connectionFactory = $connectionFactory;
         $this->routingKey = $routingKey;
@@ -80,8 +72,6 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $this->autoDeclare = $autoDeclare;
         $this->routingKeyFromHeaderName = $routingKeyFromHeaderName;
         $this->exchangeFromHeaderName = $exchangeFromHeaderName;
-        $this->defaultTimeToLive = $defaultTimeToLive;
-        $this->defaultDeliveryDelay = $defaultDeliveryDelay;
         $this->outboundMessageConverter = $outboundMessageConverter;
     }
 
@@ -121,9 +111,9 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
 
         $this->connectionFactory->getProducer()
-            ->setTimeToLive($this->defaultTimeToLive)
+            ->setTimeToLive($outboundMessage->getTimeToLive())
             ->setDelayStrategy(new RabbitMqDlxDelayStrategy())
-            ->setDeliveryDelay($this->defaultDeliveryDelay)
+            ->setDeliveryDelay($outboundMessage->getDeliveryDelay())
             ->send(new AmqpTopic($exchangeName), $messageToSend);
     }
 }

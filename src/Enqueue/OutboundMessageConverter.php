@@ -26,12 +26,22 @@ class OutboundMessageConverter
      * @var MediaType
      */
     private $defaultConversionMediaType;
+    /**
+     * @var int|null
+     */
+    private $defaultDeliveryDelay;
+    /**
+     * @var int|null
+     */
+    private $defaultTimeToLive;
 
-    public function __construct(HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType)
+    public function __construct(HeaderMapper $headerMapper, ConversionService $conversionService, MediaType $defaultConversionMediaType, ?int $defaultDeliveryDelay, ?int $defaultTimeToLive)
     {
         $this->headerMapper = $headerMapper;
         $this->conversionService = $conversionService;
         $this->defaultConversionMediaType = $defaultConversionMediaType;
+        $this->defaultDeliveryDelay = $defaultDeliveryDelay;
+        $this->defaultTimeToLive = $defaultTimeToLive;
     }
 
     public function prepare(Message $convertedMessage): OutboundMessage
@@ -75,6 +85,15 @@ class OutboundMessageConverter
             $applicationHeaders[MessageHeaders::ROUTING_SLIP] = $convertedMessage->getHeaders()->get(MessageHeaders::ROUTING_SLIP);
         }
 
-        return new OutboundMessage($enqueueMessagePayload, $applicationHeaders, $mediaType ? $mediaType->toString() : null);
+        unset($applicationHeaders[MessageHeaders::DELIVERY_DELAY]);
+        unset($applicationHeaders[MessageHeaders::TIME_TO_LIVE]);
+
+        return new OutboundMessage(
+            $enqueueMessagePayload,
+            $applicationHeaders,
+            $mediaType ? $mediaType->toString() : null,
+            $convertedMessage->getHeaders()->containsKey(MessageHeaders::DELIVERY_DELAY) ? $convertedMessage->getHeaders()->get(MessageHeaders::DELIVERY_DELAY) : $this->defaultDeliveryDelay,
+            $convertedMessage->getHeaders()->containsKey(MessageHeaders::TIME_TO_LIVE) ? $convertedMessage->getHeaders()->get(MessageHeaders::TIME_TO_LIVE) : $this->defaultTimeToLive,
+        );
     }
 }

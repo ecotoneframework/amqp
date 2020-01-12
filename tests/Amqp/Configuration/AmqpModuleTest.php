@@ -3,7 +3,7 @@
 namespace Test\Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpAdmin;
-use Ecotone\Amqp\AmqpBackedMessageChannelBuilderBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
@@ -34,7 +34,7 @@ class AmqpModuleTest extends TestCase
             AmqpAdmin::createWith([], [AmqpQueue::createWith("some")], []),
             $this->prepareConfigurationAndRetrieveAmqpAdmin(
                 [
-                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some", "amqpConnection")
+                    AmqpBackedMessageChannelBuilder::create("some", "amqpConnection")
                 ]
             )
         );
@@ -45,17 +45,17 @@ class AmqpModuleTest extends TestCase
         $this->assertEquals(
             $this->createMessagingSystemConfiguration()
                 ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some1", "amqpConnection")
+                    AmqpBackedMessageChannelBuilder::create("some1", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
                 )
                 ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some2", "amqpConnection")
+                    AmqpBackedMessageChannelBuilder::create("some2", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED)
                 ),
             $this->prepareConfiguration(
                 [
-                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some1", "amqpConnection"),
-                    AmqpBackedMessageChannelBuilderBuilder::createDirectChannel("some2", "amqpConnection")
+                    AmqpBackedMessageChannelBuilder::create("some1", "amqpConnection"),
+                    AmqpBackedMessageChannelBuilder::create("some2", "amqpConnection")
                         ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED),
                     ApplicationConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)

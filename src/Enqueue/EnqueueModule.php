@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ecotone\Amqp\Configuration;
+namespace Ecotone\Enqueue;
 
 use Ecotone\Amqp\AmqpAdmin;
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
@@ -26,7 +26,7 @@ use Ecotone\Messaging\Handler\InterfaceToCall;
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  * @ModuleAnnotation()
  */
-class AmqpModule implements AnnotationModule
+class EnqueueModule implements AnnotationModule
 {
     private function __construct()
     {
@@ -45,7 +45,7 @@ class AmqpModule implements AnnotationModule
      */
     public function getName(): string
     {
-        return "amqpModule";
+        return "enqueueModule";
     }
 
     /**
@@ -53,25 +53,23 @@ class AmqpModule implements AnnotationModule
      */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
-        $amqpExchanges = [];
-        $amqpQueues = [];
-        $amqpBindings = [];
-
+        /** @var ApplicationConfiguration $applicationConfiguration */
+        $applicationConfiguration = null;
         foreach ($extensionObjects as $extensionObject) {
-            if ($extensionObject instanceof AmqpBackedMessageChannelBuilder) {
-                $amqpQueues[] = AmqpQueue::createWith($extensionObject->getMessageChannelName());
-            }else if ($extensionObject instanceof AmqpExchange) {
-                $amqpExchanges[] = $extensionObject;
-            }else if ($extensionObject instanceof AmqpQueue) {
-                $amqpQueues[] = $extensionObject;
-            }else if ($extensionObject instanceof AmqpBinding) {
-                $amqpBindings[] = $extensionObject;
+            if ($extensionObject instanceof ApplicationConfiguration) {
+                $applicationConfiguration = $extensionObject;
+                break;
             }
         }
 
-        $moduleReferenceSearchService->store(AmqpAdmin::REFERENCE_NAME, AmqpAdmin::createWith(
-            $amqpExchanges, $amqpQueues, $amqpBindings
-        ));
+        foreach ($extensionObjects as $extensionObject) {
+            if ($extensionObject instanceof EnqueueMessageChannelBuilder && !$extensionObject->getDefaultConversionMediaType()) {
+                $extensionObject->withDefaultSerializationMediaType($applicationConfiguration->getDefaultSerializationMediaType());
+            }
+        }
+
+        $configuration->registerRelatedInterfaces([InterfaceToCall::create(EnqueueAcknowledgeConfirmationInterceptor::class, "ack")]);
+        $configuration->registerConsumerFactory(new EnqueueBackendMessageChannelConsumer());
     }
 
     /**
@@ -80,10 +78,8 @@ class AmqpModule implements AnnotationModule
     public function canHandle($extensionObject): bool
     {
         return
-            $extensionObject instanceof AmqpBackedMessageChannelBuilder
-            || $extensionObject instanceof AmqpExchange
-            || $extensionObject instanceof AmqpQueue
-            || $extensionObject instanceof AmqpBinding;
+            $extensionObject instanceof ApplicationConfiguration
+            || $extensionObject instanceof EnqueueMessageChannelBuilder;
     }
 
     /**

@@ -12,18 +12,18 @@ class OutboundMessage
     private $headers;
     /** @var string|null */
     private $contentType;
+    /** @var int|null */
+    private $deliveryDelay;
+    /** @var int|null */
+    private $timeToLive;
 
-    /**
-     * OutboundMessage constructor.
-     * @param mixed $payload
-     * @param string[] $headers
-     * @param string|null $contentType
-     */
-    public function __construct($payload, array $headers, ?string $contentType)
+    public function __construct($payload, array $headers, ?string $contentType, ?int $deliveryDelay, ?int $timeToLive)
     {
         $this->payload = $payload;
         $this->headers = $headers;
         $this->contentType = $contentType;
+        $this->deliveryDelay = $deliveryDelay;
+        $this->timeToLive = $timeToLive;
     }
 
     /**
@@ -48,5 +48,15 @@ class OutboundMessage
     public function getContentType(): ?string
     {
         return $this->contentType;
+    }
+
+    public function getDeliveryDelay(): ?int
+    {
+        return $this->deliveryDelay;
+    }
+
+    public function getTimeToLive(): ?int
+    {
+        return $this->timeToLive;
     }
 }

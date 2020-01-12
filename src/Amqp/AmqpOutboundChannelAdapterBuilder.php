@@ -151,9 +151,7 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
             $this->exchangeFromHeader,
             $this->defaultPersistentDelivery,
             $this->autoDeclare,
-            new OutboundMessageConverter($this->headerMapper, $conversionService, $this->defaultConversionMediaType),
-            $this->defaultTimeToLive,
-            $this->defaultDeliveryDelay
+            new OutboundMessageConverter($this->headerMapper, $conversionService, $this->defaultConversionMediaType, $this->defaultDeliveryDelay, $this->defaultTimeToLive)
         );
     }
 }

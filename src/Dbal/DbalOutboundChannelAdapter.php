@@ -27,14 +27,6 @@ class DbalOutboundChannelAdapter implements MessageHandler
      */
     private $autoDeclare;
     /**
-     * @var int|null
-     */
-    private $defaultTimeToLive;
-    /**
-     * @var int|null
-     */
-    private $defaultDeliveryDelay;
-    /**
      * @var OutboundMessageConverter
      */
     private $outboundMessageConverter;
@@ -47,12 +39,10 @@ class DbalOutboundChannelAdapter implements MessageHandler
      */
     private $initialized = false;
 
-    public function __construct(CachedConnectionFactory $connectionFactory, string $queueName, bool $autoDeclare, OutboundMessageConverter $outboundMessageConverter, ?int $defaultTimeToLive, ?int $defaultDeliveryDelay)
+    public function __construct(CachedConnectionFactory $connectionFactory, string $queueName, bool $autoDeclare, OutboundMessageConverter $outboundMessageConverter)
     {
         $this->connectionFactory = $connectionFactory;
         $this->autoDeclare = $autoDeclare;
-        $this->defaultTimeToLive = $defaultTimeToLive;
-        $this->defaultDeliveryDelay = $defaultDeliveryDelay;
         $this->outboundMessageConverter = $outboundMessageConverter;
         $this->queueName = $queueName;
     }
@@ -78,8 +68,8 @@ class DbalOutboundChannelAdapter implements MessageHandler
         $messageToSend = new DbalMessage($outboundMessage->getPayload(), $headers, []);
 
         $this->connectionFactory->getProducer()
-            ->setTimeToLive($this->defaultTimeToLive)
-            ->setDeliveryDelay($this->defaultDeliveryDelay)
+            ->setTimeToLive($outboundMessage->getTimeToLive())
+            ->setDeliveryDelay($outboundMessage->getDeliveryDelay())
             ->send(new DbalDestination($this->queueName), $messageToSend);
     }
 }
