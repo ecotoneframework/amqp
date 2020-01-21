@@ -55,7 +55,7 @@ class AmqpConsumerModule implements AnnotationModule
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
         $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, AmqpChannelAdapter::class);
 
-        $amqpInboundChannelAdapter = [];
+        $amqpInboundChannelAdapters = [];
         $serviceActivators = [];
 
         foreach ($amqpConsumers as $amqpConsumer) {
@@ -67,7 +67,7 @@ class AmqpConsumerModule implements AnnotationModule
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
             $endpointId = $amqpConsumerAnnotation->endpointId;
-            $amqpInboundChannelAdapter[] = AmqpInboundChannelAdapterBuilder::createWith(
+            $inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWith(
                 $endpointId,
                 $amqpConsumerAnnotation->queueName,
                 $endpointId,
@@ -75,18 +75,23 @@ class AmqpConsumerModule implements AnnotationModule
             )
                 ->withHeaderMapper($amqpConsumerAnnotation->headerMapper);
 
+            if ($amqpConsumerAnnotation->poller && $amqpConsumerAnnotation->poller->executionTimeLimitInMilliseconds) {
+                $inboundChannelAdapter = $inboundChannelAdapter->withReceiveTimeout($amqpConsumerAnnotation->poller->executionTimeLimitInMilliseconds);
+            }
+            $amqpInboundChannelAdapters[] = $inboundChannelAdapter;
+
             $serviceActivators[] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
-                                    ->withEndpointId($endpointId . ".target")
-                                    ->withInputChannelName($endpointId)
-                                    ->withMethodParameterConverters($annotationParameterBuilder->createParameterConvertersWithReferences(
-                                        InterfaceToCall::create($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
-                                        $amqpConsumerAnnotation->parameterConverters,
-                                        $amqpConsumer,
-                                        false
-                                    ));
+                ->withEndpointId($endpointId . ".target")
+                ->withInputChannelName($endpointId)
+                ->withMethodParameterConverters($annotationParameterBuilder->createParameterConvertersWithReferences(
+                    InterfaceToCall::create($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
+                    $amqpConsumerAnnotation->parameterConverters,
+                    $amqpConsumer,
+                    false
+                ));
         }
 
-        return new self($amqpInboundChannelAdapter, $serviceActivators);
+        return new self($amqpInboundChannelAdapters, $serviceActivators);
     }
 
     /**
