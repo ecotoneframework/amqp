@@ -221,7 +221,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
         $inboundRequestChannel = QueueChannel::create();
         $amqpConnectionReferenceName = "connection";
         $messageToSend = MessageBuilder::withPayload(new stdClass())
-            ->setContentType(MediaType::createApplicationXPHPObject())
+            ->setContentType(MediaType::createApplicationXPHP())
             ->build();
         $converters = [];
         $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
@@ -249,7 +249,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
         $payload = new stdClass();
         $payload->name = "someName";
         $messageToSend = MessageBuilder::withPayload($payload)
-            ->setContentType(MediaType::createApplicationXPHPObject())
+            ->setContentType(MediaType::createApplicationXPHP())
             ->build();
         $converters = [new SerializingConverter()];
         $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
