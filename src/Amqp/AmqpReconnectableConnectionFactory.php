@@ -38,6 +38,11 @@ class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFacto
         return $context;
     }
 
+    public function getConnectionInstanceId(): int
+    {
+        return spl_object_id($this->connectionFactory);
+    }
+
     /**
      * @param Context|AmqpContext|null $context
      * @return bool

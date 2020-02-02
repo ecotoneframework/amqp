@@ -59,7 +59,7 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
         $amqpConnectionFactory = $referenceSearchService->get($this->amqpConnectionReferenceName);
 
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
-            new CachedConnectionFactory(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
+            CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
             $this->buildGatewayFor($referenceSearchService, $channelResolver, $pollingMetadata),
             $amqpAdmin,
             true,

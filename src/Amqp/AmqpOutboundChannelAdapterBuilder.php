@@ -143,7 +143,7 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
         $conversionService = $referenceSearchService->get(ConversionService::REFERENCE_NAME);
 
         return new AmqpOutboundChannelAdapter(
-            new CachedConnectionFactory(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
+            CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
             $this->autoDeclare ? $referenceSearchService->get(AmqpAdmin::REFERENCE_NAME) : AmqpAdmin::createEmpty(),
             $this->exchangeName,
             $this->defaultRoutingKey,

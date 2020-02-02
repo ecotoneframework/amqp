@@ -21,6 +21,7 @@ use Ramsey\Uuid\Uuid;
 use ReflectionException;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
 use Test\Ecotone\Amqp\Fixture\Order\PlaceOrder;
+use Test\Ecotone\Amqp\Fixture\Transaction\TransactionalCommandBusExample;
 
 /**
  * Defines application features from the specific context.
@@ -44,14 +45,24 @@ class DomainContext extends TestCase implements Context
     public function iActiveMessagingForNamespace(string $namespace)
     {
         $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "localhost";
-        $objects = [
-            new OrderService(),
-            new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"])
-        ];
+
+        switch ($namespace) {
+            case "Test\Ecotone\Amqp\Fixture\Order": {
+                $objects = [
+                    new OrderService()
+                ];
+                break;
+            }
+            case "Test\Ecotone\Amqp\Fixture\Transaction": {
+                $objects = [
+                    new \Test\Ecotone\Amqp\Fixture\Transaction\OrderService()
+                ];
+            }
+        }
 
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
             __DIR__ . "/../../../../",
-            InMemoryPSRContainer::createFromObjects($objects),
+            InMemoryPSRContainer::createFromObjects(array_merge($objects, [new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"])])),
             ApplicationConfiguration::createWithDefaults()
                 ->withNamespaces([$namespace])
                 ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
@@ -105,5 +116,18 @@ class DomainContext extends TestCase implements Context
     private function getQueryBus() : QueryBus
     {
         return self::$messagingSystem->getGatewayByName(QueryBus::class);
+    }
+
+    /**
+     * @When I transactionally order :order
+     */
+    public function iTransactionallyOrder(string $order)
+    {
+        /** @var TransactionalCommandBusExample $commandBus */
+        $commandBus = self::$messagingSystem->getGatewayByName(TransactionalCommandBusExample::class);
+
+        try {
+            $commandBus->convertAndSend("order.register", MediaType::APPLICATION_X_PHP, $order);
+        }catch (\InvalidArgumentException $e) {}
     }
 }
