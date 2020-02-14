@@ -45,6 +45,10 @@ class RegisterAmqpPublisher
      */
     private $defaultRoutingKey = "";
     /**
+     * @var string
+     */
+    private $routingKeyFromHeader = "";
+    /**
      * @var bool
      */
     private $defaultPersistentDelivery = true;
@@ -100,6 +104,21 @@ class RegisterAmqpPublisher
         $this->defaultRoutingKey = $defaultRoutingKey;
 
         return $this;
+    }
+
+    public function withRoutingKeyFromHeader(string $headerName) : RegisterAmqpPublisher
+    {
+        $this->routingKeyFromHeader = $headerName;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRoutingKeyFromHeader(): string
+    {
+        return $this->routingKeyFromHeader;
     }
 
     /**
