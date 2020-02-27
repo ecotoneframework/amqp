@@ -25,7 +25,7 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
     /**
      * @var string
      */
-    private $defaultRoutingKey;
+    private $defaultRoutingKey = "";
     /**
      * @var string
      */

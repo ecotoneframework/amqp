@@ -81,6 +81,7 @@ class AmqpPublisherModuleTest extends TestCase
             $this->prepareConfiguration(
                 [
                     RegisterAmqpPublisher::create(Publisher::class, "exchangeName", MediaType::APPLICATION_JSON, "amqpConnection")
+                        ->withRoutingKeyFromHeader("amqpRouting")
                         ->withAutoDeclareQueueOnSend(true)
                         ->withHeaderMapper("ecotone.*")
                         ->withDefaultRoutingKey("someRouting")
@@ -138,6 +139,7 @@ class AmqpPublisherModuleTest extends TestCase
             $this->prepareConfiguration(
                 [
                     RegisterAmqpPublisher::create(Publisher::class, "exchangeName", null, "amqpConnection")
+                        ->withRoutingKeyFromHeader("amqpRouting")
                         ->withAutoDeclareQueueOnSend(true),
                     ApplicationConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)
