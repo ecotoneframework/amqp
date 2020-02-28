@@ -113,7 +113,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
             $this->initialized = true;
         }
 
-        $consumer = $this->connectionFactory->getConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)), $endpointId);
+        $consumer = $this->connectionFactory->getConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
 
         /** @var AmqpMessage $amqpMessage */
         $amqpMessage = $consumer->receive($this->receiveTimeoutInMilliseconds);
