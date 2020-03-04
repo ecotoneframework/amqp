@@ -21,7 +21,8 @@ class ChannelConfiguration
      */
     public function registerCommandChannel() : AmqpBackedMessageChannelBuilder
     {
-        return AmqpBackedMessageChannelBuilder::create("order.register");
+        return AmqpBackedMessageChannelBuilder::create("order.register")
+                    ->withReceiveTimeout(100);
     }
 
     /**
@@ -35,6 +36,7 @@ class ChannelConfiguration
             PollingMetadata::create("orders")
                 ->setExecutionTimeLimitInMilliseconds(1)
                 ->setHandledMessageLimit(1)
+                ->setErrorChannelName("errorChannel")
         ];
     }
 }

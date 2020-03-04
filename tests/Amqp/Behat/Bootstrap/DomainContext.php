@@ -22,6 +22,7 @@ use ReflectionException;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
 use Test\Ecotone\Amqp\Fixture\Order\PlaceOrder;
 use Test\Ecotone\Amqp\Fixture\Transaction\TransactionalCommandBusExample;
+use Test\Ecotone\Modelling\Fixture\OrderAggregate\OrderErrorHandler;
 
 /**
  * Defines application features from the specific context.
@@ -49,7 +50,8 @@ class DomainContext extends TestCase implements Context
         switch ($namespace) {
             case "Test\Ecotone\Amqp\Fixture\Order": {
                 $objects = [
-                    new OrderService()
+                    new OrderService(),
+                    new OrderErrorHandler()
                 ];
                 break;
             }

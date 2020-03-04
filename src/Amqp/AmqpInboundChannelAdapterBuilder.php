@@ -6,8 +6,8 @@ namespace Ecotone\Amqp;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
 use Ecotone\Enqueue\InboundMessageConverter;
+use Ecotone\Messaging\Endpoint\AcknowledgeConfirmationInterceptor;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
-use Ecotone\Messaging\Endpoint\EntrypointGateway;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Endpoint\TaskExecutorChannelAdapter\TaskExecutorChannelAdapter;
 use Ecotone\Messaging\Handler\ChannelResolver;
@@ -31,16 +31,22 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
      */
     private $queueName;
 
-    private function __construct(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName)
+    private function __construct(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName, bool $withAckInterceptor)
     {
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
         $this->queueName = $queueName;
         $this->initialize($endpointId, $requestChannelName, $amqpConnectionReferenceName);
+        $this->withAckInterceptor = $withAckInterceptor;
     }
 
     public static function createWith(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class): self
     {
-        return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName);
+        return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName, true);
+    }
+
+    public static function createWithoutAck(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class): self
+    {
+        return new self($endpointId, $queueName, $requestChannelName, $amqpConnectionReferenceName, false);
     }
 
     /**
@@ -58,9 +64,10 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
         /** @var AmqpConnectionFactory $amqpConnectionFactory */
         $amqpConnectionFactory = $referenceSearchService->get($this->amqpConnectionReferenceName);
 
+        $inboundAmqpGateway = $this->buildGatewayFor($referenceSearchService, $channelResolver, $pollingMetadata);
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
             CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
-            $this->buildGatewayFor($referenceSearchService, $channelResolver, $pollingMetadata),
+            $inboundAmqpGateway,
             $amqpAdmin,
             true,
             $this->queueName,

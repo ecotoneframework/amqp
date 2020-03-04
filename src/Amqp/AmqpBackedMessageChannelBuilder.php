@@ -48,7 +48,7 @@ class AmqpBackedMessageChannelBuilder implements EnqueueMessageChannelBuilder
     {
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
 
-        $this->inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWith("", $channelName, null, $amqpConnectionReferenceName);
+        $this->inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWithoutAck("", $channelName, null, $amqpConnectionReferenceName);
         $this->outboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
             ->withDefaultRoutingKey($channelName)
             ->withAutoDeclareOnSend(true)

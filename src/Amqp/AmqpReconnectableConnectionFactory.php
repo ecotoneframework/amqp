@@ -10,6 +10,8 @@ use Ecotone\Messaging\Support\Assert;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 use Enqueue\AmqpLib\AmqpContext;
 use Interop\Queue\Context;
+use PhpAmqpLib\Connection\AMQPConnection;
+use PhpAmqpLib\Connection\AMQPLazyConnection;
 use ReflectionClass;
 
 class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFactory
@@ -31,7 +33,12 @@ class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFacto
         $heartbeatOnTick = $this->connectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
         if ($heartbeatOnTick) {
             register_tick_function(function (\Interop\Amqp\AmqpContext $context) {
-                $context->getLibChannel()->getConnection()->checkHeartBeat();
+                /** @var AMQPLazyConnection|AMQPConnection|null $connection */
+                $connection = $context->getLibChannel()->getConnection();
+
+                if ($connection) {
+                    $connection->checkHeartBeat();
+                }
             }, $context);
         }
 

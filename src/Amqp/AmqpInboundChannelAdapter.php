@@ -4,19 +4,15 @@ declare(strict_types=1);
 namespace Ecotone\Amqp;
 
 use Ecotone\Enqueue\CachedConnectionFactory;
-use Ecotone\Enqueue\EnqueueAcknowledgementCallback;
 use Ecotone\Enqueue\InboundMessageConverter;
 use Ecotone\Messaging\Conversion\MediaType;
-use Ecotone\Messaging\Endpoint\EntrypointGateway;
+use Ecotone\Messaging\Endpoint\InboundChannelAdapterEntrypoint;
 use Ecotone\Messaging\Message;
-use Ecotone\Messaging\MessageConverter\HeaderMapper;
-use Ecotone\Messaging\MessageHeaders;
+use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Scheduling\TaskExecutor;
 use Ecotone\Messaging\Support\Assert;
 use Ecotone\Messaging\Support\InvalidArgumentException;
-use Ecotone\Messaging\Support\MessageBuilder;
 use Interop\Amqp\AmqpMessage;
-use Interop\Queue\Consumer as EnqueueConsumer;
 use Throwable;
 
 /**
@@ -31,7 +27,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
      */
     private $connectionFactory;
     /**
-     * @var EntrypointGateway
+     * @var InboundChannelAdapterEntrypoint
      */
     private $inboundAmqpGateway;
     /**
@@ -65,7 +61,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
 
     public function __construct(
         CachedConnectionFactory $cachedConnectionFactory,
-        EntrypointGateway $inboundAmqpGateway,
+        InboundChannelAdapterEntrypoint $inboundAmqpGateway,
         AmqpAdmin $amqpAdmin,
         bool $declareOnStartup,
         string $amqpQueueName,
@@ -104,7 +100,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
      * @param string|null $endpointId
      * @return Message|null
      * @throws InvalidArgumentException
-     * @throws \Ecotone\Messaging\MessagingException
+     * @throws MessagingException
      */
     public function getMessage(?string $endpointId): ?Message
     {
