@@ -9,5 +9,5 @@ use Enqueue\AmqpLib\AmqpConnectionFactory;
  */
 class AmqpTransaction
 {
-    public $connectionReferenceName = AmqpConnectionFactory::class;
+    public $connectionReferenceNames = [AmqpConnectionFactory::class];
 }

@@ -20,27 +20,41 @@ class AmqpTransactionInterceptor
      * @var ReferenceSearchService
      */
     private $referenceSearchService;
+    /**
+     * @var string[]
+     */
+    private $connectionReferenceNames;
 
-    public function __construct(ReferenceSearchService $referenceSearchService)
+    public function __construct(ReferenceSearchService $referenceSearchService, array $connectionReferenceNames)
     {
         $this->referenceSearchService = $referenceSearchService;
+        $this->connectionReferenceNames = $connectionReferenceNames;
     }
 
-    public function transactional(MethodInvocation $methodInvocation, AmqpTransaction $amqpTransaction)
-    {
-        $reconnectableConnectionFactory = CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($this->referenceSearchService->get($amqpTransaction->connectionReferenceName)));
+    public function transactional(MethodInvocation $methodInvocation, ?AmqpTransaction $amqpTransaction)
+    {;
+        $channels = array_map(function(string $connectionReferenceName){
+            $connectionFactory = CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
 
-        /** @var AmqpContext $context */
-        $context = $reconnectableConnectionFactory->createContext();
+            /** @var AmqpContext $context */
+            $context = $connectionFactory->createContext();
 
-        $channel = $context->getLibChannel();
+            return  $context->getLibChannel();
+        }, $amqpTransaction ? $amqpTransaction->connectionReferenceNames : $this->connectionReferenceNames);
 
-        $channel->tx_select();
+        foreach ($channels as $channel) {
+            $channel->tx_select();
+        }
         try {
             $result = $methodInvocation->proceed();
-            $channel->tx_commit();
+
+            foreach ($channels as $channel) {
+                $channel->tx_commit();
+            }
         }catch (\Throwable $exception) {
-            $channel->tx_rollback();
+            foreach ($channels as $channel) {
+                $channel->tx_rollback();
+            }
 
             throw $exception;
         }

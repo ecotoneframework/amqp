@@ -11,7 +11,6 @@ use Ecotone\Modelling\LazyEventBus\LazyEventPublishing;
 /**
  * @MessageEndpoint()
  * @LazyEventPublishing()
- * @AmqpTransaction()
  */
 interface TransactionalCommandBusExample extends CommandBus
 {

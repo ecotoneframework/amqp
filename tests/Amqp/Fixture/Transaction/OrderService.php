@@ -3,14 +3,12 @@
 
 namespace Test\Ecotone\Amqp\Fixture\Transaction;
 
-use Ecotone\Amqp\Annotation\AmqpChannelAdapter;
-use Ecotone\Messaging\Annotation\Async;
-use Ecotone\Messaging\Annotation\InboundChannelAdapter;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\Poller;
+use Ecotone\Messaging\Annotation\ServiceActivator;
+use Ecotone\Messaging\MessagingException;
 use Ecotone\Modelling\Annotation\CommandHandler;
-use Ecotone\Modelling\Annotation\QueryHandler;
-use Test\Ecotone\Amqp\Fixture\Transaction\OrderRegisteringGateway;
+use InvalidArgumentException;
 
 /**
  * Class OrderService
@@ -22,25 +20,33 @@ class OrderService
 {
     /**
      * @param string $order
-     * @param \Test\Ecotone\Amqp\Fixture\Transaction\OrderRegisteringGateway $orderRegisteringGateway
+     * @param OrderRegisteringGateway $orderRegisteringGateway
      * @CommandHandler(inputChannelName="order.register")
      */
-    public function register(string $order, OrderRegisteringGateway $orderRegisteringGateway) : void
+    public function register(string $order, OrderRegisteringGateway $orderRegisteringGateway): void
     {
         $orderRegisteringGateway->place($order);
 
-        throw new \InvalidArgumentException("test");
+        throw new InvalidArgumentException("test");
     }
 
     /**
-     * @AmqpChannelAdapter(
-     *     queueName="placeOrder",
+     * @ServiceActivator(
      *     endpointId="placeOrderEndpoint",
-     *     poller=@Poller(handledMessageLimit=1, executionTimeLimitInMilliseconds=1)
+     *     inputChannelName="placeOrder",
+     *     poller=@Poller(handledMessageLimit=1, executionTimeLimitInMilliseconds=1, errorChannelName="errorChannel")
      * )
      */
-    public function throwExceptionOnReceive(string $order) : void
+    public function throwExceptionOnReceive(string $order): void
     {
-        throw new \InvalidArgumentException("Order was not rollbacked");
+        throw new InvalidArgumentException("Order was not rollbacked");
+    }
+
+    /**
+     * @ServiceActivator(inputChannelName="errorChannel")
+     */
+    public function errorConfiguration(MessagingException $exception)
+    {
+        throw $exception;
     }
 }

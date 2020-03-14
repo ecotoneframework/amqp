@@ -4,6 +4,7 @@
 namespace Test\Ecotone\Amqp\Fixture\Transaction;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Annotation\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
@@ -19,9 +20,14 @@ class ChannelConfiguration
     /**
      * @Extension()
      */
-    public function registerCommandChannel() : AmqpBackedMessageChannelBuilder
+    public function registerCommandChannel() : array
     {
-        return AmqpBackedMessageChannelBuilder::create("placeOrder");
+        return [
+            AmqpBackedMessageChannelBuilder::create("placeOrder"),
+            AmqpConfiguration::createWithDefaults()
+                ->withDefaultTransactionOnPollabeEndpoints(true)
+                ->withDefaultTransactionOnCommandBus(true)
+        ];
     }
 
 }

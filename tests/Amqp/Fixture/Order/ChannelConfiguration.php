@@ -19,15 +19,6 @@ class ChannelConfiguration
     /**
      * @Extension()
      */
-    public function registerCommandChannel() : AmqpBackedMessageChannelBuilder
-    {
-        return AmqpBackedMessageChannelBuilder::create("order.register")
-                    ->withReceiveTimeout(100);
-    }
-
-    /**
-     * @Extension()
-     */
     public function registerAsyncChannel() : array
     {
         return [
