@@ -4,6 +4,7 @@
 namespace Ecotone\Amqp;
 
 use Ecotone\Enqueue\EnqueueMessageChannelBuilder;
+use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
@@ -148,6 +149,12 @@ class AmqpBackedMessageChannelBuilder implements EnqueueMessageChannelBuilder
      */
     public function build(ReferenceSearchService $referenceSearchService): MessageChannel
     {
+        if (!$this->getDefaultConversionMediaType() && $referenceSearchService->has(ApplicationConfiguration::class)) {
+            /** @var ApplicationConfiguration $applicationConfiguration */
+            $applicationConfiguration = $referenceSearchService->get(ApplicationConfiguration::class);
+            $this->withDefaultConversionMediaType($applicationConfiguration->getDefaultSerializationMediaType());
+        }
+
         $channelResolver = InMemoryChannelResolver::createEmpty();
         return new AmqpBackendMessageChannel(
             $this->inboundChannelAdapter->createInboundChannelAdapter($channelResolver, $referenceSearchService, PollingMetadata::create("")),

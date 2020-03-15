@@ -2,6 +2,7 @@
 
 namespace Test\Ecotone\Amqp\Configuration;
 
+use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Amqp\AmqpAdmin;
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBinding;
@@ -12,21 +13,27 @@ use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
 use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
+use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
-use Ecotone\Messaging\Config\InMemoryReferenceTypeFromNameResolver;
 use Ecotone\Messaging\Config\MessagingSystemConfiguration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
-use Ecotone\Messaging\Config\ModuleRetrievingService;
+use Ecotone\Messaging\Conversion\ArrayToJson\ArrayToJsonConverterBuilder;
 use Ecotone\Messaging\Conversion\MediaType;
+use Ecotone\Messaging\Handler\InMemoryReferenceSearchService;
 use Ecotone\Messaging\MessagingException;
-use PHPUnit\Framework\TestCase;
+use Ecotone\Messaging\PollableChannel;
+use Ecotone\Messaging\Support\InvalidArgumentException;
+use Ecotone\Messaging\Support\MessageBuilder;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
+use ReflectionException;
+use Test\Ecotone\Amqp\AmqpMessagingTest;
 
 /**
  * Class AmqpModuleTest
  * @package Test\Ecotone\Amqp
  * @author  Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpModuleTest extends TestCase
+class AmqpModuleTest extends AmqpMessagingTest
 {
     public function test_registering_amqp_backed_message_channel()
     {
@@ -40,46 +47,9 @@ class AmqpModuleTest extends TestCase
         );
     }
 
-    public function TODO__test_registering_amqp_backed_message_channel_with_application_media_type()
-    {
-        $this->assertEquals(
-            $this->createMessagingSystemConfiguration()
-                ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilder::create("some1", "amqpConnection")
-                        ->withDefaultConversionMediaType(MediaType::APPLICATION_JSON)
-                )
-                ->registerMessageChannel(
-                    AmqpBackedMessageChannelBuilder::create("some2", "amqpConnection")
-                        ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED)
-                ),
-            $this->prepareConfiguration(
-                [
-                    AmqpBackedMessageChannelBuilder::create("some1", "amqpConnection"),
-                    AmqpBackedMessageChannelBuilder::create("some2", "amqpConnection")
-                        ->withDefaultConversionMediaType(MediaType::APPLICATION_X_PHP_SERIALIZED),
-                    ApplicationConfiguration::createWithDefaults()
-                        ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)
-                ]
-            )
-        );
-    }
-
-    public function test_registering_amqp_configuration()
-    {
-        $amqpExchange = AmqpExchange::createDirectExchange("exchange");
-        $amqpQueue = AmqpQueue::createWith("queue");
-        $amqpBinding = AmqpBinding::createFromNames("exchange", "queue", "route");
-
-        $this->assertEquals(
-            AmqpAdmin::createWith([$amqpExchange], [$amqpQueue], [$amqpBinding]),
-            $this->prepareConfigurationAndRetrieveAmqpAdmin([$amqpExchange, $amqpQueue, $amqpBinding])
-        );
-    }
-
-
     /**
      * @param AnnotationRegistrationService $annotationRegistrationService
-     * @param array                         $extensions
+     * @param array $extensions
      *
      * @return MessagingSystemConfiguration
      * @throws MessagingException
@@ -89,19 +59,6 @@ class AmqpModuleTest extends TestCase
         $moduleReferenceSearchService = $this->prepareConfiguration($extensions);
 
         return $moduleReferenceSearchService->retrieveRequired(AmqpAdmin::REFERENCE_NAME);
-    }
-
-    /**
-     * @return MessagingSystemConfiguration
-     * @throws MessagingException
-     * @throws \Doctrine\Common\Annotations\AnnotationException
-     * @throws \Ecotone\Messaging\Config\ConfigurationException
-     * @throws \Ecotone\Messaging\Support\InvalidArgumentException
-     * @throws \ReflectionException
-     */
-    private function createMessagingSystemConfiguration(): Configuration
-    {
-        return MessagingSystemConfiguration::prepareWithDefaults(InMemoryModuleMessaging::createEmpty());
     }
 
     /**
@@ -122,5 +79,54 @@ class AmqpModuleTest extends TestCase
             $moduleReferenceSearchService
         );
         return $moduleReferenceSearchService;
+    }
+
+    /**
+     * @return MessagingSystemConfiguration
+     * @throws MessagingException
+     * @throws AnnotationException
+     * @throws ConfigurationException
+     * @throws InvalidArgumentException
+     * @throws ReflectionException
+     */
+    private function createMessagingSystemConfiguration(): Configuration
+    {
+        return MessagingSystemConfiguration::prepareWithDefaults(InMemoryModuleMessaging::createEmpty());
+    }
+
+    public function test_registering_amqp_backed_message_channel_with_application_media_type()
+    {
+        $amqpChannelBuilder = AmqpBackedMessageChannelBuilder::create("amqpChannel");
+        $messagingSystem = MessagingSystemConfiguration::prepareWithDefaults(InMemoryModuleMessaging::createWith([AmqpModule::create(InMemoryAnnotationRegistrationService::createEmpty())], [
+            ApplicationConfiguration::createWithDefaults()
+                ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON),
+            $amqpChannelBuilder
+        ]))
+            ->registerMessageChannel($amqpChannelBuilder)
+            ->registerConverter(new ArrayToJsonConverterBuilder())
+            ->buildMessagingSystemFromConfiguration(InMemoryReferenceSearchService::createWith([
+                AmqpConnectionFactory::class => $this->getRabbitConnectionFactory()
+            ]));
+
+        /** @var PollableChannel $channel */
+        $channel = $messagingSystem->getMessageChannelByName("amqpChannel");
+        $channel->send(MessageBuilder::withPayload([1,2,3])->setContentType(MediaType::createApplicationXPHPArray())->build());
+
+        $this->assertEquals(
+            "[1,2,3]",
+            $channel->receive()->getPayload()
+        );
+    }
+
+    public function test_registering_amqp_configuration()
+    {
+        $amqpExchange = AmqpExchange::createDirectExchange("exchange");
+        $amqpQueue = AmqpQueue::createWith("queue");
+        $amqpBinding = AmqpBinding::createFromNames("exchange", "queue", "route");
+
+        $this->assertEquals(
+            AmqpAdmin::createWith([$amqpExchange], [$amqpQueue], [$amqpBinding]),
+            $this->prepareConfigurationAndRetrieveAmqpAdmin([$amqpExchange, $amqpQueue, $amqpBinding])
+        );
     }
 }

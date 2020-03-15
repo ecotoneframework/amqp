@@ -1,5 +1,5 @@
 Feature: activating as aggregate order entity
-  
+
   Scenario: I order product and I want to see it on the list of orders products
     Given I active messaging for namespace "Test\Ecotone\Amqp\Fixture\Order"
     When I order "milk"
