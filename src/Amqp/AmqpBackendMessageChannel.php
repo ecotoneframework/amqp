@@ -42,7 +42,7 @@ class AmqpBackendMessageChannel implements PollableChannel
      */
     public function receive(): ?Message
     {
-        return $this->amqpInboundChannelAdapter->getMessage(null);
+        return $this->amqpInboundChannelAdapter->getMessage();
     }
 
     /**
@@ -50,6 +50,6 @@ class AmqpBackendMessageChannel implements PollableChannel
      */
     public function receiveWithTimeout(int $timeoutInMilliseconds): ?Message
     {
-        return $this->amqpInboundChannelAdapter->getMessage(null);
+        return $this->amqpInboundChannelAdapter->getMessage();
     }
 }

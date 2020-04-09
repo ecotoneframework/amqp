@@ -7,6 +7,7 @@ use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\InboundMessageConverter;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\InboundChannelAdapterEntrypoint;
+use Ecotone\Messaging\Endpoint\PollingConsumer\ChannelException;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Scheduling\TaskExecutor;
@@ -49,15 +50,15 @@ class AmqpInboundChannelAdapter implements TaskExecutor
     /**
      * @var bool
      */
-    private $queueNameWithEndpointId;
-    /**
-     * @var bool
-     */
     private $initialized = false;
     /**
      * @var InboundMessageConverter
      */
     private $inboundMessageConverter;
+    /**
+     * @var bool
+     */
+    private $isMessageChannel;
 
     public function __construct(
         CachedConnectionFactory $cachedConnectionFactory,
@@ -67,7 +68,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
         string $amqpQueueName,
         int $receiveTimeoutInMilliseconds,
         InboundMessageConverter $inboundMessageConverter,
-        bool $queueNameWithEndpointId
+        bool $isMessageChannel
     )
     {
         $this->connectionFactory = $cachedConnectionFactory;
@@ -76,8 +77,8 @@ class AmqpInboundChannelAdapter implements TaskExecutor
         $this->amqpAdmin = $amqpAdmin;
         $this->amqpQueueName = $amqpQueueName;
         $this->receiveTimeoutInMilliseconds = $receiveTimeoutInMilliseconds;
-        $this->queueNameWithEndpointId = $queueNameWithEndpointId;
         $this->inboundMessageConverter = $inboundMessageConverter;
+        $this->isMessageChannel = $isMessageChannel;
     }
 
     /**
@@ -86,7 +87,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
      */
     public function execute(): void
     {
-        $message = $this->getMessage(null);
+        $message = $this->getMessage();
 
         if (!$message) {
             return;
@@ -97,41 +98,44 @@ class AmqpInboundChannelAdapter implements TaskExecutor
     }
 
     /**
-     * @param string|null $endpointId
      * @return Message|null
      * @throws InvalidArgumentException
      * @throws MessagingException
      */
-    public function getMessage(?string $endpointId): ?Message
+    public function getMessage(): ?Message
     {
-        if (!$this->initialized || !$this->queueNameWithEndpointId) {
-            $this->amqpAdmin->declareQueueWithBindings($this->getQueueName($endpointId), $this->connectionFactory->createContext());
-            $this->initialized = true;
+        try {
+            if (!$this->initialized) {
+                $this->amqpAdmin->declareQueueWithBindings($this->getQueueName(), $this->connectionFactory->createContext());
+                $this->initialized = true;
+            }
+
+            $consumer = $this->connectionFactory->getConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName()));
+
+            /** @var AmqpMessage $amqpMessage */
+            $amqpMessage = $consumer->receive($this->receiveTimeoutInMilliseconds);
+
+            if (!$amqpMessage) {
+                return null;
+            }
+
+            $messageBuilder = $this->inboundMessageConverter->toMessage($amqpMessage, $consumer);
+            if ($amqpMessage->getContentType()) {
+                $messageBuilder = $messageBuilder->setContentType(MediaType::parseMediaType($amqpMessage->getContentType()));
+            }
+
+            return $messageBuilder->build();
+        }catch (\Throwable $exception) {
+            if ($this->isMessageChannel) {
+                throw $exception;
+            }
+
+            throw new ChannelException("There was a problem during polling amqp channel", 0, $exception);
         }
-
-        $consumer = $this->connectionFactory->getConsumer(new \Interop\Amqp\Impl\AmqpQueue($this->getQueueName($endpointId)));
-
-        /** @var AmqpMessage $amqpMessage */
-        $amqpMessage = $consumer->receive($this->receiveTimeoutInMilliseconds);
-
-        if (!$amqpMessage) {
-            return null;
-        }
-
-        $messageBuilder = $this->inboundMessageConverter->toMessage($amqpMessage, $consumer);
-        if ($amqpMessage->getContentType()) {
-            $messageBuilder = $messageBuilder->setContentType(MediaType::parseMediaType($amqpMessage->getContentType()));
-        }
-
-        return $messageBuilder->build();
     }
 
-    /**
-     * @param string|null $endpointId
-     * @return string
-     */
-    private function getQueueName(?string $endpointId): string
+    private function getQueueName(): string
     {
-        return $this->queueNameWithEndpointId ? $this->amqpQueueName . "." . $endpointId : $this->amqpQueueName;
+        return $this->amqpQueueName;
     }
 }
