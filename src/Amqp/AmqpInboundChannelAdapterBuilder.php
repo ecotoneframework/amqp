@@ -6,14 +6,12 @@ namespace Ecotone\Amqp;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
 use Ecotone\Enqueue\InboundMessageConverter;
-use Ecotone\Messaging\Endpoint\AcknowledgeConfirmationInterceptor;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Endpoint\TaskExecutorChannelAdapter\TaskExecutorChannelAdapter;
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
-use Exception;
 
 /**
  * Class InboundEnqueueGatewayBuilder
@@ -57,8 +55,24 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
         return $this->queueName;
     }
 
+    /**
+     * @inheritDoc
+     */
+    protected function buildAdapter(ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): ConsumerLifecycle
+    {
+        return TaskExecutorChannelAdapter::createFrom(
+            $this->endpointId,
+            $pollingMetadata->setFixedRateInMilliseconds(1),
+            $this->createInboundChannelAdapter($channelResolver, $referenceSearchService, $pollingMetadata)
+        );
+    }
+
     public function createInboundChannelAdapter(ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): AmqpInboundChannelAdapter
     {
+        if ($pollingMetadata->getExecutionTimeLimitInMilliseconds()) {
+            $this->withReceiveTimeout($pollingMetadata->getExecutionTimeLimitInMilliseconds());
+        }
+
         /** @var AmqpAdmin $amqpAdmin */
         $amqpAdmin = $referenceSearchService->get(AmqpAdmin::REFERENCE_NAME);
         /** @var AmqpConnectionFactory $amqpConnectionFactory */
@@ -76,17 +90,5 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
             !$this->withAckInterceptor
         );
         return $inboundChannelAdapter;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function buildAdapter(ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): ConsumerLifecycle
-    {
-        return TaskExecutorChannelAdapter::createFrom(
-            $this->endpointId,
-            $pollingMetadata->setFixedRateInMilliseconds(1),
-            $this->createInboundChannelAdapter($channelResolver, $referenceSearchService, $pollingMetadata)
-        );
     }
 }

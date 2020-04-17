@@ -7,7 +7,6 @@ use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Annotation\Extension;
-use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 /**
  * Class ChannelConfiguration
@@ -20,10 +19,11 @@ class ChannelConfiguration
     /**
      * @Extension()
      */
-    public function registerCommandChannel() : array
+    public function registerCommandChannel(): array
     {
         return [
-            AmqpBackedMessageChannelBuilder::create("placeOrder"),
+            AmqpBackedMessageChannelBuilder::create("placeOrder")
+                ->withReceiveTimeout(1),
             AmqpConfiguration::createWithDefaults()
                 ->withDefaultTransactionOnPollabeEndpoints(true)
                 ->withDefaultTransactionOnCommandBus(true)

@@ -11,3 +11,9 @@ Feature: activating as aggregate order entity
     Given I active messaging for namespace "Test\Ecotone\Amqp\Fixture\Transaction"
     When I transactionally order "milk"
     When I active receiver "placeOrderEndpoint"
+
+  Scenario: I add product to shopping cart with publisher and consume it
+    Given I active messaging for namespace "Test\Ecotone\Amqp\Fixture\Shop"
+    When I add product "window" to shopping cart
+    And I active receiver "addToCart"
+    Then there should be product "window" in shopping cart

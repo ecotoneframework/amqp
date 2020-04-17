@@ -2,8 +2,8 @@
 
 namespace Test\Ecotone\Amqp\Behat\Bootstrap;
 
-use Behat\Behat\Context\Context;
 use Behat\Behat\Tester\Exception\PendingException;
+use Behat\Behat\Context\Context;
 use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Lite\EcotoneLiteConfiguration;
 use Ecotone\Lite\InMemoryPSRContainer;
@@ -21,7 +21,7 @@ use Ramsey\Uuid\Uuid;
 use ReflectionException;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
 use Test\Ecotone\Amqp\Fixture\Order\PlaceOrder;
-use Test\Ecotone\Amqp\Fixture\Transaction\TransactionalCommandBusExample;
+use Test\Ecotone\Amqp\Fixture\Shop\ShoppingCart;
 use Test\Ecotone\Modelling\Fixture\OrderAggregate\OrderErrorHandler;
 
 /**
@@ -48,18 +48,28 @@ class DomainContext extends TestCase implements Context
         $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "localhost";
 
         switch ($namespace) {
-            case "Test\Ecotone\Amqp\Fixture\Order": {
-                $objects = [
-                    new OrderService(),
-                    new OrderErrorHandler()
-                ];
+            case "Test\Ecotone\Amqp\Fixture\Order":
+                {
+                    $objects = [
+                        new OrderService(),
+                        new OrderErrorHandler()
+                    ];
+                    break;
+                }
+            case "Test\Ecotone\Amqp\Fixture\Transaction":
+                {
+                    $objects = [
+                        new \Test\Ecotone\Amqp\Fixture\Transaction\OrderService()
+                    ];
+                }
                 break;
-            }
-            case "Test\Ecotone\Amqp\Fixture\Transaction": {
-                $objects = [
-                    new \Test\Ecotone\Amqp\Fixture\Transaction\OrderService()
-                ];
-            }
+            case "Test\Ecotone\Amqp\Fixture\Shop":
+                {
+                    $objects = [
+                        new ShoppingCart()
+                    ];
+                }
+                break;
         }
 
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
@@ -77,6 +87,11 @@ class DomainContext extends TestCase implements Context
     public function iOrder(string $order)
     {
         return $this->getCommandBus()->send(new PlaceOrder($order));
+    }
+
+    private function getCommandBus(): CommandBus
+    {
+        return self::$messagingSystem->getGatewayByName(CommandBus::class);
     }
 
     /**
@@ -99,6 +114,11 @@ class DomainContext extends TestCase implements Context
         );
     }
 
+    private function getQueryBus(): QueryBus
+    {
+        return self::$messagingSystem->getGatewayByName(QueryBus::class);
+    }
+
     /**
      * @Then there should be nothing on the order list
      */
@@ -110,26 +130,40 @@ class DomainContext extends TestCase implements Context
         );
     }
 
-    private function getCommandBus(): CommandBus
-    {
-        return self::$messagingSystem->getGatewayByName(CommandBus::class);
-    }
-
-    private function getQueryBus() : QueryBus
-    {
-        return self::$messagingSystem->getGatewayByName(QueryBus::class);
-    }
-
     /**
      * @When I transactionally order :order
      */
     public function iTransactionallyOrder(string $order)
     {
-        /** @var TransactionalCommandBusExample $commandBus */
-        $commandBus = self::$messagingSystem->getGatewayByName(TransactionalCommandBusExample::class);
+        $commandBus = self::$messagingSystem->getGatewayByName(CommandBus::class);
 
         try {
             $commandBus->convertAndSend("order.register", MediaType::APPLICATION_X_PHP, $order);
-        }catch (\InvalidArgumentException $e) {}
+        } catch (\InvalidArgumentException $e) {
+        }
+    }
+
+    /**
+     * @When I add product :productName to shopping cart
+     */
+    public function iAddProductToShoppingCart(string $productName)
+    {
+        $commandBus = self::$messagingSystem->getGatewayByName(CommandBus::class);
+
+        $commandBus->convertAndSend("addToBasket", MediaType::APPLICATION_X_PHP, $productName);
+    }
+
+    /**
+     * @Then there should be product :productName in shopping cart
+     */
+    public function thereShouldBeProductInShoppingCart(string $productName)
+    {
+        /** @var QueryBus $queryBus */
+        $queryBus = self::$messagingSystem->getGatewayByName(QueryBus::class);
+
+       $this->assertEquals(
+           [$productName],
+           $queryBus->convertAndSend("getShoppingCartList", MediaType::APPLICATION_X_PHP, [])
+       );
     }
 }

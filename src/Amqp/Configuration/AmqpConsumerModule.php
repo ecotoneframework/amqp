@@ -5,12 +5,14 @@ namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
 use Ecotone\Amqp\Annotation\AmqpChannelAdapter;
+use Ecotone\Messaging\Annotation\Consumer;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ParameterConverterAnnotationFactory;
 use Ecotone\Messaging\Config\Configuration;
+use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Config\OptionalReference;
 use Ecotone\Messaging\Config\RequiredReference;
@@ -36,6 +38,8 @@ class AmqpConsumerModule implements AnnotationModule
      */
     private $serviceActivators = [];
 
+
+
     /**
      * AmqpConsumerModule constructor.
      * @param AmqpInboundChannelAdapterBuilder[] $amqpInboundChannelAdapters
@@ -53,7 +57,7 @@ class AmqpConsumerModule implements AnnotationModule
     public static function create(AnnotationRegistrationService $annotationRegistrationService)
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
-        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, AmqpChannelAdapter::class);
+        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, Consumer::class);
 
         $amqpInboundChannelAdapters = [];
         $serviceActivators = [];
@@ -63,24 +67,11 @@ class AmqpConsumerModule implements AnnotationModule
             $messageEndpoint = $amqpConsumer->getAnnotationForClass();
 
             $reference = $messageEndpoint->referenceName ?? $amqpConsumer->getClassName();
-            /** @var AmqpChannelAdapter $amqpConsumerAnnotation */
+            /** @var Consumer $amqpConsumerAnnotation */
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
             $endpointId = $amqpConsumerAnnotation->endpointId;
-            $inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWith(
-                $endpointId,
-                $amqpConsumerAnnotation->queueName,
-                $endpointId,
-                $amqpConsumerAnnotation->amqpConnectionReferenceName
-            )
-                ->withHeaderMapper($amqpConsumerAnnotation->headerMapper);
-
-            if ($amqpConsumerAnnotation->poller && $amqpConsumerAnnotation->poller->executionTimeLimitInMilliseconds) {
-                $inboundChannelAdapter = $inboundChannelAdapter->withReceiveTimeout($amqpConsumerAnnotation->poller->executionTimeLimitInMilliseconds);
-            }
-            $amqpInboundChannelAdapters[] = $inboundChannelAdapter;
-
-            $serviceActivators[] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
+            $serviceActivators[$endpointId] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
                 ->withEndpointId($endpointId . ".target")
                 ->withInputChannelName($endpointId)
                 ->withMethodParameterConverters($annotationParameterBuilder->createParameterConvertersWithReferences(
@@ -107,11 +98,24 @@ class AmqpConsumerModule implements AnnotationModule
      */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
-        foreach ($this->amqpInboundChannelAdapters as $amqpInboundChannelAdapter) {
-            $configuration->registerConsumer($amqpInboundChannelAdapter);
-        }
-        foreach ($this->serviceActivators as $serviceActivator) {
-            $configuration->registerMessageHandler($serviceActivator);
+        /** @var AmqpConsumerConfiguration $extensionObject */
+        foreach ($extensionObjects as $extensionObject) {
+            $inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWith(
+                $extensionObject->getEndpointId(),
+                $extensionObject->getQueueName(),
+                $extensionObject->getEndpointId(),
+                $extensionObject->getAmqpConnectionReferenceName()
+            )
+                ->withHeaderMapper($extensionObject->getHeaderMapper())
+                ->withReceiveTimeout($extensionObject->getReceiveTimeoutInMilliseconds());
+
+            $configuration->registerConsumer($inboundChannelAdapter);
+
+            if (!array_key_exists($extensionObject->getEndpointId(), $this->serviceActivators)) {
+                throw ConfigurationException::create("Lack of Consumer defined under endpoint id {$extensionObject->getEndpointId()}");
+            }
+
+            $configuration->registerMessageHandler($this->serviceActivators[$extensionObject->getEndpointId()]);
         }
     }
 
@@ -120,7 +124,7 @@ class AmqpConsumerModule implements AnnotationModule
      */
     public function canHandle($extensionObject): bool
     {
-        return false;
+        return $extensionObject instanceof AmqpConsumerConfiguration;
     }
 
     /**
