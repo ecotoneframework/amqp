@@ -4,7 +4,6 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
-use Ecotone\Amqp\AmqpPublisher;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
@@ -13,8 +12,6 @@ use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
-use Ecotone\Messaging\Config\OptionalReference;
-use Ecotone\Messaging\Config\RequiredReference;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\Gateway\GatewayProxyBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderBuilder;
@@ -22,7 +19,7 @@ use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaders
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderValueBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
 use Ecotone\Messaging\MessageHeaders;
-use Ecotone\Messaging\Publisher;
+use Ecotone\Messaging\MessagePublisher;
 
 /**
  * Class AmqpPublisherModule
@@ -63,9 +60,9 @@ class AmqpPublisherModule implements AnnotationModule
             }
         }
 
-        /** @var RegisterAmqpPublisher $amqpPublisher */
+        /** @var AmqpMessagePublisherConfiguration $amqpPublisher */
         foreach ($extensionObjects as $amqpPublisher) {
-            if (!($amqpPublisher instanceof RegisterAmqpPublisher)) {
+            if (!($amqpPublisher instanceof AmqpMessagePublisherConfiguration)) {
                 return;
             }
 
@@ -78,14 +75,14 @@ class AmqpPublisherModule implements AnnotationModule
 
             $configuration = $configuration
                 ->registerGatewayBuilder(
-                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "send", $amqpPublisher->getReferenceName())
+                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), MessagePublisher::class, "send", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
                         ])
                 )
                 ->registerGatewayBuilder(
-                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "sendWithMetadata", $amqpPublisher->getReferenceName())
+                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), MessagePublisher::class, "sendWithMetadata", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
@@ -93,14 +90,14 @@ class AmqpPublisherModule implements AnnotationModule
                         ])
                 )
                 ->registerGatewayBuilder(
-                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "convertAndSend", $amqpPublisher->getReferenceName())
+                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), MessagePublisher::class, "convertAndSend", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
                         ])
                 )
                 ->registerGatewayBuilder(
-                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), Publisher::class, "convertAndSendWithMetadata", $amqpPublisher->getReferenceName())
+                    GatewayProxyBuilder::create($amqpPublisher->getReferenceName(), MessagePublisher::class, "convertAndSendWithMetadata", $amqpPublisher->getReferenceName())
                         ->withParameterConverters([
                             GatewayPayloadBuilder::create("data"),
                             GatewayHeadersBuilder::create("metadata"),
@@ -129,7 +126,7 @@ class AmqpPublisherModule implements AnnotationModule
     public function canHandle($extensionObject): bool
     {
         return
-            $extensionObject instanceof RegisterAmqpPublisher
+            $extensionObject instanceof AmqpMessagePublisherConfiguration
             || $extensionObject instanceof ApplicationConfiguration;
     }
 

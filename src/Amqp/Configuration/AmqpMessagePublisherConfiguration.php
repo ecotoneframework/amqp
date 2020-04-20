@@ -14,7 +14,7 @@ use Exception;
  * @package Ecotone\Amqp\Configuration
  * @author Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class RegisterAmqpPublisher
+class AmqpMessagePublisherConfiguration
 {
     /**
      * @var string
@@ -73,7 +73,7 @@ class RegisterAmqpPublisher
      * @param string $exchangeName
      * @param string|null $outputDefaultConversionMediaType
      * @param string $amqpConnectionReference
-     * @return RegisterAmqpPublisher
+     * @return AmqpMessagePublisherConfiguration
      */
     public static function create(string $publisherReferenceName, string $exchangeName = "", ?string $outputDefaultConversionMediaType = null, string $amqpConnectionReference = AmqpConnectionFactory::class): self
     {
@@ -90,23 +90,23 @@ class RegisterAmqpPublisher
 
     /**
      * @param bool $autoDeclareQueueOnSend
-     * @return RegisterAmqpPublisher
+     * @return AmqpMessagePublisherConfiguration
      */
-    public function withAutoDeclareQueueOnSend(bool $autoDeclareQueueOnSend): RegisterAmqpPublisher
+    public function withAutoDeclareQueueOnSend(bool $autoDeclareQueueOnSend): AmqpMessagePublisherConfiguration
     {
         $this->autoDeclareQueueOnSend = $autoDeclareQueueOnSend;
 
         return $this;
     }
 
-    public function withDefaultRoutingKey(string $defaultRoutingKey) : RegisterAmqpPublisher
+    public function withDefaultRoutingKey(string $defaultRoutingKey) : AmqpMessagePublisherConfiguration
     {
         $this->defaultRoutingKey = $defaultRoutingKey;
 
         return $this;
     }
 
-    public function withRoutingKeyFromHeader(string $headerName) : RegisterAmqpPublisher
+    public function withRoutingKeyFromHeader(string $headerName) : AmqpMessagePublisherConfiguration
     {
         $this->routingKeyFromHeader = $headerName;
 
@@ -133,9 +133,9 @@ class RegisterAmqpPublisher
      * @param string $headerMapper comma separated list of headers to be mapped.
      *                             (e.g. "\*" or "thing1*, thing2" or "*thing1")
      *
-     * @return RegisterAmqpPublisher
+     * @return AmqpMessagePublisherConfiguration
      */
-    public function withHeaderMapper(string $headerMapper) : RegisterAmqpPublisher
+    public function withHeaderMapper(string $headerMapper) : AmqpMessagePublisherConfiguration
     {
         $this->headerMapper = $headerMapper;
 
@@ -152,9 +152,9 @@ class RegisterAmqpPublisher
 
     /**
      * @param bool $defaultPersistentDelivery
-     * @return RegisterAmqpPublisher
+     * @return AmqpMessagePublisherConfiguration
      */
-    public function withDefaultPersistentDelivery(bool $defaultPersistentDelivery): RegisterAmqpPublisher
+    public function withDefaultPersistentDelivery(bool $defaultPersistentDelivery): AmqpMessagePublisherConfiguration
     {
         $this->defaultPersistentDelivery = $defaultPersistentDelivery;
         return $this;

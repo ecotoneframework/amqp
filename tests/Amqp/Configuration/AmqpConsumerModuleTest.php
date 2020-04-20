@@ -5,7 +5,7 @@ namespace Test\Ecotone\Amqp\Configuration;
 
 use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
-use Ecotone\Amqp\Configuration\AmqpConsumerConfiguration;
+use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
 use Ecotone\Amqp\Configuration\AmqpConsumerModule;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
@@ -55,7 +55,7 @@ class AmqpConsumerModuleTest extends TestCase
                     AmqpConsumerExample::class
                 ],
                 [
-                    AmqpConsumerConfiguration::create("someId", "someQueue", "amqpConnection")
+                    AmqpMessageConsumerConfiguration::create("someId", "someQueue", "amqpConnection")
                         ->withReceiveTimeoutInMilliseconds(1)
                         ->withHeaderMapper("ecotone.*")
                 ]

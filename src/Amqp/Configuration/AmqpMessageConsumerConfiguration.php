@@ -5,7 +5,7 @@ namespace Ecotone\Amqp\Configuration;
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 
-class AmqpConsumerConfiguration
+class AmqpMessageConsumerConfiguration
 {
     /**
      * @var string
@@ -63,7 +63,7 @@ class AmqpConsumerConfiguration
         return $this->headerMapper;
     }
 
-    public function withHeaderMapper(string $headerMapper): AmqpConsumerConfiguration
+    public function withHeaderMapper(string $headerMapper): AmqpMessageConsumerConfiguration
     {
         $self = clone $this;
 
@@ -76,7 +76,7 @@ class AmqpConsumerConfiguration
         return $this->receiveTimeoutInMilliseconds;
     }
 
-    public function withReceiveTimeoutInMilliseconds(int $receiveTimeoutInMilliseconds): AmqpConsumerConfiguration
+    public function withReceiveTimeoutInMilliseconds(int $receiveTimeoutInMilliseconds): AmqpMessageConsumerConfiguration
     {
         $this->receiveTimeoutInMilliseconds = $receiveTimeoutInMilliseconds;
         return $this;

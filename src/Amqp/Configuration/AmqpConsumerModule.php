@@ -92,7 +92,7 @@ class AmqpConsumerModule implements AnnotationModule
      */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
-        /** @var AmqpConsumerConfiguration $extensionObject */
+        /** @var AmqpMessageConsumerConfiguration $extensionObject */
         foreach ($extensionObjects as $extensionObject) {
             $inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWith(
                 $extensionObject->getEndpointId(),
@@ -118,7 +118,7 @@ class AmqpConsumerModule implements AnnotationModule
      */
     public function canHandle($extensionObject): bool
     {
-        return $extensionObject instanceof AmqpConsumerConfiguration;
+        return $extensionObject instanceof AmqpMessageConsumerConfiguration;
     }
 
     /**
