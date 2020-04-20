@@ -3,9 +3,9 @@
 
 namespace Test\Ecotone\Amqp\Fixture\Shop;
 
-use Ecotone\Messaging\Annotation\Consumer;
+use Ecotone\Messaging\Annotation\MessageConsumer;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
-use Ecotone\Messaging\Publisher;
+use Ecotone\Messaging\MessagePublisher;
 use Ecotone\Modelling\Annotation\CommandHandler;
 use Ecotone\Modelling\Annotation\QueryHandler;
 
@@ -19,13 +19,13 @@ class ShoppingCart
     /**
      * @CommandHandler(inputChannelName="addToBasket")
      */
-    public function requestAddingToBasket(string $productName, Publisher $publisher) : void
+    public function requestAddingToBasket(string $productName, MessagePublisher $publisher) : void
     {
         $publisher->send($productName);
     }
 
     /**
-     * @Consumer(endpointId=MessagingConfiguration::CONSUMER_ID)
+     * @MessageConsumer(endpointId=MessagingConfiguration::CONSUMER_ID)
      */
     public function addToBasket(string $productName) : void
     {

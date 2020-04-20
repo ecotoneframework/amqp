@@ -48,18 +48,21 @@ class AmqpTransactionConfiguration implements AnnotationModule
     {
         $connectionFactories = [AmqpConnectionFactory::class];
         $pointcut = "@(" . AmqpTransaction::class . ")";
+        $amqpConfiguration = AmqpConfiguration::createWithDefaults();
         foreach ($extensionObjects as $extensionObject) {
             if ($extensionObject instanceof AmqpConfiguration) {
-                if ($extensionObject->isDefaultTransactionOnPollableEndpoints()) {
-                    $pointcut .= "||@(" . PollableEndpoint::class . ")";
-                }
-                if ($extensionObject->isDefaultTransactionOnCommandBus()) {
-                    $pointcut .= "||" . CommandBus::class . "";
-                }
-                if ($extensionObject->getDefaultConnectionReferenceNames()) {
-                    $connectionFactories = $extensionObject->getDefaultConnectionReferenceNames();
-                }
+                $amqpConfiguration = $extensionObject;
             }
+        }
+
+        if ($amqpConfiguration->isDefaultTransactionOnPollableEndpoints()) {
+            $pointcut .= "||@(" . PollableEndpoint::class . ")";
+        }
+        if ($amqpConfiguration->isDefaultTransactionOnCommandBus()) {
+            $pointcut .= "||" . CommandBus::class . "";
+        }
+        if ($amqpConfiguration->getDefaultConnectionReferenceNames()) {
+            $connectionFactories = $amqpConfiguration->getDefaultConnectionReferenceNames();
         }
 
         $configuration

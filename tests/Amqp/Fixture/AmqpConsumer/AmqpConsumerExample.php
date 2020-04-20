@@ -3,7 +3,7 @@
 
 namespace Test\Ecotone\Amqp\Fixture\AmqpConsumer;
 
-use Ecotone\Messaging\Annotation\Consumer;
+use Ecotone\Messaging\Annotation\MessageConsumer;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\Parameter\Payload;
 use stdClass;
@@ -17,7 +17,7 @@ use stdClass;
 class AmqpConsumerExample
 {
     /**
-     * @Consumer(
+     * @MessageConsumer(
      *     endpointId="someId",
      *     parameterConverters={
      *          @Payload(parameterName="object")

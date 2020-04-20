@@ -4,8 +4,7 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
-use Ecotone\Amqp\Annotation\AmqpChannelAdapter;
-use Ecotone\Messaging\Annotation\Consumer;
+use Ecotone\Messaging\Annotation\MessageConsumer;
 use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
@@ -14,12 +13,8 @@ use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ParameterConverterAn
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
-use Ecotone\Messaging\Config\OptionalReference;
-use Ecotone\Messaging\Config\RequiredReference;
-use Ecotone\Messaging\Endpoint\InboundChannelAdapter\InboundChannelAdapterBuilder;
 use Ecotone\Messaging\Handler\InterfaceToCall;
 use Ecotone\Messaging\Handler\ServiceActivator\ServiceActivatorBuilder;
-use Ramsey\Uuid\Uuid;
 
 /**
  * Class AmqpConsumerModule
@@ -39,7 +34,6 @@ class AmqpConsumerModule implements AnnotationModule
     private $serviceActivators = [];
 
 
-
     /**
      * AmqpConsumerModule constructor.
      * @param AmqpInboundChannelAdapterBuilder[] $amqpInboundChannelAdapters
@@ -57,7 +51,7 @@ class AmqpConsumerModule implements AnnotationModule
     public static function create(AnnotationRegistrationService $annotationRegistrationService)
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
-        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, Consumer::class);
+        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, MessageConsumer::class);
 
         $amqpInboundChannelAdapters = [];
         $serviceActivators = [];
@@ -67,7 +61,7 @@ class AmqpConsumerModule implements AnnotationModule
             $messageEndpoint = $amqpConsumer->getAnnotationForClass();
 
             $reference = $messageEndpoint->referenceName ?? $amqpConsumer->getClassName();
-            /** @var Consumer $amqpConsumerAnnotation */
+            /** @var MessageConsumer $amqpConsumerAnnotation */
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
             $endpointId = $amqpConsumerAnnotation->endpointId;
