@@ -29,7 +29,7 @@ class AmqpConfiguration
         return new self();
     }
 
-    public function withDefaultTransactionOnAsynchronousEndpoints(bool $isTransactionEnabled) : self
+    public function withTransactionOnAsynchronousEndpoints(bool $isTransactionEnabled) : self
     {
         $self = clone $this;
         $self->defaultTransactionOnPollableEndpoints = $isTransactionEnabled;
@@ -37,7 +37,7 @@ class AmqpConfiguration
         return $self;
     }
 
-    public function withDefaultTransactionOnCommandBus(bool $isTransactionEnabled) : self
+    public function withTransactionOnCommandBus(bool $isTransactionEnabled) : self
     {
         $self = clone $this;
         $self->defaultTransactionOnCommandBus = $isTransactionEnabled;

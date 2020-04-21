@@ -25,8 +25,8 @@ class ChannelConfiguration
             AmqpBackedMessageChannelBuilder::create("placeOrder")
                 ->withReceiveTimeout(1),
             AmqpConfiguration::createWithDefaults()
-                ->withDefaultTransactionOnAsynchronousEndpoints(true)
-                ->withDefaultTransactionOnCommandBus(true)
+                ->withTransactionOnAsynchronousEndpoints(true)
+                ->withTransactionOnCommandBus(true)
         ];
     }
 
