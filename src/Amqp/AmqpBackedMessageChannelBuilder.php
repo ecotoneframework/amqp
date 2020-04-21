@@ -20,7 +20,7 @@ use Enqueue\AmqpLib\AmqpConnectionFactory;
  * @package Ecotone\Amqp
  * @author  Dariusz Gafka <dgafka.mail@gmail.com>
  */
-class AmqpBackedMessageChannelBuilder implements EnqueueMessageChannelBuilder
+class AmqpBackedMessageChannelBuilder extends EnqueueMessageChannelBuilder
 {
     /**
      * @var AmqpInboundChannelAdapterBuilder
@@ -144,21 +144,11 @@ class AmqpBackedMessageChannelBuilder implements EnqueueMessageChannelBuilder
         );
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function build(ReferenceSearchService $referenceSearchService): MessageChannel
+    public function prepareProviderChannel(ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): MessageChannel
     {
-        if (!$this->getDefaultConversionMediaType() && $referenceSearchService->has(ApplicationConfiguration::class)) {
-            /** @var ApplicationConfiguration $applicationConfiguration */
-            $applicationConfiguration = $referenceSearchService->get(ApplicationConfiguration::class);
-            $this->withDefaultConversionMediaType($applicationConfiguration->getDefaultSerializationMediaType());
-        }
-
-        $channelResolver = InMemoryChannelResolver::createEmpty();
         return new AmqpBackendMessageChannel(
-            $this->inboundChannelAdapter->createInboundChannelAdapter($channelResolver, $referenceSearchService, PollingMetadata::create("")),
-            $this->outboundChannelAdapter->build($channelResolver, $referenceSearchService)
+            $this->inboundChannelAdapter->createInboundChannelAdapter(InMemoryChannelResolver::createEmpty(), $referenceSearchService, $pollingMetadata),
+            $this->outboundChannelAdapter->build(InMemoryChannelResolver::createEmpty(), $referenceSearchService)
         );
     }
 }
