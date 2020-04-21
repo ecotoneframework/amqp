@@ -86,7 +86,7 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
             true,
             $this->queueName,
             $this->receiveTimeoutInMilliseconds,
-            new InboundMessageConverter($this->acknowledgeMode, AmqpHeader::HEADER_ACKNOWLEDGE, $this->headerMapper),
+            new InboundMessageConverter($this->getEndpointId(),$this->acknowledgeMode, AmqpHeader::HEADER_ACKNOWLEDGE, $this->headerMapper),
             !$this->withAckInterceptor
         );
         return $inboundChannelAdapter;

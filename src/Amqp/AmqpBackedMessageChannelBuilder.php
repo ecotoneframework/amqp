@@ -49,7 +49,7 @@ class AmqpBackedMessageChannelBuilder extends EnqueueMessageChannelBuilder
     {
         $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
 
-        $this->inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWithoutAck("", $channelName, null, $amqpConnectionReferenceName);
+        $this->inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWithoutAck($channelName, $channelName, null, $amqpConnectionReferenceName);
         $this->outboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
             ->withDefaultRoutingKey($channelName)
             ->withAutoDeclareOnSend(true)
@@ -98,14 +98,6 @@ class AmqpBackedMessageChannelBuilder extends EnqueueMessageChannelBuilder
         $this->outboundChannelAdapter->withDefaultDeliveryDelay($timeInMilliseconds);
 
         return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function isPollable(): bool
-    {
-        return true;
     }
 
     public function withDefaultConversionMediaType(string $mediaType): self
