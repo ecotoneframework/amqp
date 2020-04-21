@@ -55,7 +55,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
             }
         }
 
-        if ($amqpConfiguration->isDefaultTransactionOnPollableEndpoints()) {
+        if ($amqpConfiguration->isDefaultTransactionOnAsynchronousEndpoints()) {
             $pointcut .= "||@(" . PollableEndpoint::class . ")";
         }
         if ($amqpConfiguration->isDefaultTransactionOnCommandBus()) {

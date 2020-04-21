@@ -56,7 +56,7 @@ class AmqpConfiguration
     /**
      * @return bool
      */
-    public function isDefaultTransactionOnPollableEndpoints(): bool
+    public function isDefaultTransactionOnAsynchronousEndpoints(): bool
     {
         return $this->defaultTransactionOnPollableEndpoints;
     }
