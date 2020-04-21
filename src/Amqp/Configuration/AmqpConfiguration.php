@@ -29,7 +29,7 @@ class AmqpConfiguration
         return new self();
     }
 
-    public function withDefaultTransactionOnPollabeEndpoints(bool $isTransactionEnabled) : self
+    public function withDefaultTransactionOnAsynchronousEndpoints(bool $isTransactionEnabled) : self
     {
         $self = clone $this;
         $self->defaultTransactionOnPollableEndpoints = $isTransactionEnabled;
