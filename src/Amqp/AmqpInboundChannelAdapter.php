@@ -7,7 +7,7 @@ use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\InboundMessageConverter;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\InboundChannelAdapterEntrypoint;
-use Ecotone\Messaging\Endpoint\PollingConsumer\ChannelException;
+use Ecotone\Messaging\Endpoint\PollingConsumer\ConnectionException;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Scheduling\TaskExecutor;
@@ -130,7 +130,7 @@ class AmqpInboundChannelAdapter implements TaskExecutor
                 throw $exception;
             }
 
-            throw new ChannelException("There was a problem during polling amqp channel", 0, $exception);
+            throw new ConnectionException("There was a problem during polling amqp channel", 0, $exception);
         }
     }
 
