@@ -12,6 +12,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
+use Ecotone\Messaging\Precedence;
 use Ecotone\Modelling\CommandBus;
 use Ecotone\Modelling\LazyEventBus\LazyEventBusInterceptor;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
@@ -71,7 +72,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
                     AmqpTransactionInterceptor::class,
                     new AmqpTransactionInterceptorBuilder($connectionFactories),
                     "transactional",
-                    LazyEventBusInterceptor::PRECEDENCE * (-1),
+                    Precedence::DATABASE_TRANSACTION_PRECEDENCE + 1,
                     $pointcut
                 )
             );
