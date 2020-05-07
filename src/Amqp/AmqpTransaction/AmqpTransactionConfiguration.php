@@ -5,6 +5,7 @@ namespace Ecotone\Amqp\AmqpTransaction;
 
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
+use Ecotone\Messaging\Annotation\AsynchronousRunningEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Annotation\PollableEndpoint;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
@@ -57,7 +58,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
         }
 
         if ($amqpConfiguration->isDefaultTransactionOnAsynchronousEndpoints()) {
-            $pointcut .= "||@(" . PollableEndpoint::class . ")";
+            $pointcut .= "||@(" . AsynchronousRunningEndpoint::class . ")";
         }
         if ($amqpConfiguration->isDefaultTransactionOnCommandBus()) {
             $pointcut .= "||" . CommandBus::class . "";
@@ -72,7 +73,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
                     AmqpTransactionInterceptor::class,
                     new AmqpTransactionInterceptorBuilder($connectionFactories),
                     "transactional",
-                    Precedence::DATABASE_TRANSACTION_PRECEDENCE + 1,
+                    Precedence::DATABASE_TRANSACTION_PRECEDENCE - 1,
                     $pointcut
                 )
             );

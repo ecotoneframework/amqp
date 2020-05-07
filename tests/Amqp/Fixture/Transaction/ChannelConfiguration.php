@@ -7,6 +7,7 @@ use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Annotation\Extension;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 /**
  * Class ChannelConfiguration
@@ -24,6 +25,10 @@ class ChannelConfiguration
         return [
             AmqpBackedMessageChannelBuilder::create("placeOrder")
                 ->withReceiveTimeout(1),
+            PollingMetadata::create("placeOrderEndpoint")
+                ->setHandledMessageLimit(1)
+                ->setExecutionTimeLimitInMilliseconds(1)
+                ->setErrorChannelName("errorChannel"),
             AmqpConfiguration::createWithDefaults()
                 ->withTransactionOnAsynchronousEndpoints(true)
                 ->withTransactionOnCommandBus(true)
