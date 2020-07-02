@@ -35,7 +35,7 @@ class AmqpMessagePublisherConfiguration
     /**
      * @var bool
      */
-    private $autoDeclareQueueOnSend = false;
+    private $autoDeclareQueueOnSend = true;
     /**
      * @var string
      */
