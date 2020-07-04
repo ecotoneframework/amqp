@@ -1,10 +1,9 @@
 <?php
 
 
-namespace Test\Ecotone\Amqp\Fixture\Transaction;
+namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
 
 use Ecotone\Messaging\Annotation\MessageEndpoint;
-use Ecotone\Messaging\Annotation\Poller;
 use Ecotone\Messaging\Annotation\ServiceActivator;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Modelling\Annotation\CommandHandler;

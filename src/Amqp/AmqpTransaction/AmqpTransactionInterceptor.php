@@ -3,16 +3,17 @@
 
 namespace Ecotone\Amqp\AmqpTransaction;
 
-use Ecotone\Amqp\AmqpReconnectableConnectionFactory;
+use Ecotone\Amqp\AmqpConsumerConnectionFactory;
+use Ecotone\Amqp\AmqpPublisherConnectionFactory;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInvocation;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Enqueue\AmqpLib\AmqpContext;
 
 /**
- * Class AmqpTransactionInterceptor
- * @package Ecotone\Amqp\AmqpTransaction
- * @author Dariusz Gafka <dgafka.mail@gmail.com>
+ * https://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/
+ *
+ * The confirm.select method enables publisher confirms on a channel.Â Â Note that a transactional channel cannot be put into confirm mode and a confirm mode channel cannot be made transactional.
  */
 class AmqpTransactionInterceptor
 {
@@ -34,7 +35,7 @@ class AmqpTransactionInterceptor
     public function transactional(MethodInvocation $methodInvocation, ?AmqpTransaction $amqpTransaction)
     {;
         $channels = array_map(function(string $connectionReferenceName){
-            $connectionFactory = CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
+            $connectionFactory = CachedConnectionFactory::createFor(new AmqpPublisherConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
 
             /** @var AmqpContext $context */
             $context = $connectionFactory->createContext();

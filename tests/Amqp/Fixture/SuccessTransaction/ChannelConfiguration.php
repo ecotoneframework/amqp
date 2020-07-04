@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Test\Ecotone\Amqp\Fixture\Transaction;
+namespace Test\Ecotone\Amqp\Fixture\SuccessTransaction;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
@@ -27,8 +27,7 @@ class ChannelConfiguration
                 ->withReceiveTimeout(1),
             PollingMetadata::create("placeOrderEndpoint")
                 ->setHandledMessageLimit(1)
-                ->setExecutionTimeLimitInMilliseconds(1)
-                ->setErrorChannelName("errorChannel"),
+                ->setExecutionTimeLimitInMilliseconds(1),
             AmqpConfiguration::createWithDefaults()
                 ->withTransactionOnAsynchronousEndpoints(true)
                 ->withTransactionOnCommandBus(true)

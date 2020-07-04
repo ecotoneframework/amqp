@@ -8,8 +8,8 @@ use Interop\Amqp\AmqpConnectionFactory;
 
 class AmqpConfiguration
 {
-    const DEFAULT_TRANSACTION_ON_POLLABLE_ENDPOINTS = false;
-    const DEFAULT_TRANSACTION_ON_COMMAND_BUS = false;
+    const DEFAULT_TRANSACTION_ON_POLLABLE_ENDPOINTS = true;
+    const DEFAULT_TRANSACTION_ON_COMMAND_BUS = true;
 
     private $defaultTransactionOnPollableEndpoints = self::DEFAULT_TRANSACTION_ON_POLLABLE_ENDPOINTS;
 

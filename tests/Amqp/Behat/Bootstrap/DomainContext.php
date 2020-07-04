@@ -13,9 +13,11 @@ use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
+use Ecotone\Modelling\AggregateNotFoundException;
 use Ecotone\Modelling\CommandBus;
 use Ecotone\Modelling\QueryBus;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
+use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionException;
@@ -56,10 +58,17 @@ class DomainContext extends TestCase implements Context
                     ];
                     break;
                 }
-            case "Test\Ecotone\Amqp\Fixture\Transaction":
+            case "Test\Ecotone\Amqp\Fixture\FailureTransaction":
                 {
                     $objects = [
-                        new \Test\Ecotone\Amqp\Fixture\Transaction\OrderService()
+                        new \Test\Ecotone\Amqp\Fixture\FailureTransaction\OrderService()
+                    ];
+                }
+                break;
+            case "Test\Ecotone\Amqp\Fixture\SuccessTransaction":
+                {
+                    $objects = [
+                        new \Test\Ecotone\Amqp\Fixture\SuccessTransaction\OrderService()
                     ];
                 }
                 break;
@@ -165,5 +174,26 @@ class DomainContext extends TestCase implements Context
            [$productName],
            $queryBus->convertAndSend("getShoppingCartList", MediaType::APPLICATION_X_PHP, [])
        );
+    }
+
+    /**
+     * @Then there should be :orderName order
+     */
+    public function thereShouldBeOrder(string $orderName)
+    {
+        $this->assertEquals(
+            $orderName,
+            $this->getQueryBus()->convertAndSend("order.getOrder", MediaType::APPLICATION_X_PHP_ARRAY, [])
+        );
+    }
+
+    /**
+     * @Then there should be no :orderName order
+     */
+    public function thereShouldBeNoOrder(string $orderName)
+    {
+        $this->assertNull(
+            $this->getQueryBus()->convertAndSend("order.getOrder", MediaType::APPLICATION_X_PHP_ARRAY, [])
+        );
     }
 }

@@ -80,7 +80,7 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
 
         $inboundAmqpGateway = $this->buildGatewayFor($referenceSearchService, $channelResolver, $pollingMetadata);
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
-            CachedConnectionFactory::createFor(new AmqpReconnectableConnectionFactory($amqpConnectionFactory)),
+            CachedConnectionFactory::createFor(new AmqpConsumerConnectionFactory($amqpConnectionFactory)),
             $inboundAmqpGateway,
             $amqpAdmin,
             true,

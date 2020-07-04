@@ -14,7 +14,7 @@ use PhpAmqpLib\Connection\AMQPConnection;
 use PhpAmqpLib\Connection\AMQPLazyConnection;
 use ReflectionClass;
 
-class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFactory
+class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 {
     /**
      * @var AmqpConnectionFactory
