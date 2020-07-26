@@ -4,10 +4,10 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
+use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
-use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
@@ -32,7 +32,7 @@ class AmqpPublisherModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationRegistrationService $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService)
     {
         return new self();
     }

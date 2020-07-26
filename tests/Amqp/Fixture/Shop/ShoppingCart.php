@@ -4,14 +4,10 @@
 namespace Test\Ecotone\Amqp\Fixture\Shop;
 
 use Ecotone\Messaging\Annotation\MessageConsumer;
-use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\MessagePublisher;
 use Ecotone\Modelling\Annotation\CommandHandler;
 use Ecotone\Modelling\Annotation\QueryHandler;
 
-/**
- * @MessageEndpoint()
- */
 class ShoppingCart
 {
     private $shoppingCart = [];

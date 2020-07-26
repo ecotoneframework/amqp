@@ -3,12 +3,8 @@
 
 namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
 
-use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\MessageGateway;
 
-/**
- * @MessageEndpoint()
- */
 interface OrderRegisteringGateway
 {
     /**

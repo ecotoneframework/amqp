@@ -5,8 +5,9 @@ namespace Test\Ecotone\Amqp\Configuration;
 
 use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
-use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
 use Ecotone\Amqp\Configuration\AmqpConsumerModule;
+use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
+use Ecotone\AnnotationFinder\InMemory\InMemoryAnnotationFinder;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
@@ -88,7 +89,7 @@ class AmqpConsumerModuleTest extends TestCase
      */
     private function prepareConfiguration(array $classes, array $extensions): MessagingSystemConfiguration
     {
-        $cqrsMessagingModule = AmqpConsumerModule::create(InMemoryAnnotationRegistrationService::createFrom($classes));
+        $cqrsMessagingModule = AmqpConsumerModule::create(InMemoryAnnotationFinder::createFrom($classes));
 
         $extendedConfiguration = $this->createMessagingSystemConfiguration();
         $moduleReferenceSearchService = ModuleReferenceSearchService::createEmpty();

@@ -5,11 +5,11 @@ namespace Ecotone\Amqp\AmqpTransaction;
 
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
+use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\AsynchronousRunningEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Annotation\PollableEndpoint;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
-use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
@@ -30,7 +30,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationRegistrationService $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService)
     {
         return new self();
     }

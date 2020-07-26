@@ -81,6 +81,8 @@ class AmqpQueue
     {
         $this->withDeadLetterExchange = $amqpExchange->getExchangeName();
         $this->withDeadLetterRoutingKey = $routingKey;
+
+        return $this;
     }
 
     public function withDeadLetterForDefaultExchange(AmqpQueue $amqpQueue) : self

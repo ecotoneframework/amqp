@@ -3,16 +3,13 @@
 
 namespace Test\Ecotone\Amqp\Fixture\AmqpConsumer;
 
+use Ecotone\Messaging\Annotation\ClassReference;
 use Ecotone\Messaging\Annotation\MessageConsumer;
-use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\Parameter\Payload;
 use stdClass;
 
 /**
- * Class AmqpConsumerExample
- * @package Test\Ecotone\Amqp\Fixture
- * @author Dariusz Gafka <dgafka.mail@gmail.com>
- * @MessageEndpoint("amqpConsumer")
+ * @ClassReference("amqpConsumer")
  */
 class AmqpConsumerExample
 {

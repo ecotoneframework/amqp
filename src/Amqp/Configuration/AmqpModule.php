@@ -8,9 +8,9 @@ use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
+use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
-use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 
@@ -29,7 +29,7 @@ class AmqpModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationRegistrationService $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService)
     {
         return new self();
     }

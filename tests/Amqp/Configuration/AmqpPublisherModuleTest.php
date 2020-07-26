@@ -5,8 +5,9 @@ namespace Test\Ecotone\Amqp\Configuration;
 
 use Doctrine\Common\Annotations\AnnotationException;
 use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
-use Ecotone\Amqp\Configuration\AmqpPublisherModule;
 use Ecotone\Amqp\Configuration\AmqpMessagePublisherConfiguration;
+use Ecotone\Amqp\Configuration\AmqpPublisherModule;
+use Ecotone\AnnotationFinder\InMemory\InMemoryAnnotationFinder;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
 use Ecotone\Messaging\Config\ApplicationConfiguration;
@@ -22,8 +23,8 @@ use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaders
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderValueBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
 use Ecotone\Messaging\MessageHeaders;
-use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\MessagePublisher;
+use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use ReflectionException;
@@ -36,33 +37,41 @@ class AmqpPublisherModuleTest extends TestCase
             $this->createMessagingSystemConfiguration()
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "send", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "sendWithMetadata", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeadersBuilder::create("metadata"),
+                                GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "convertAndSend", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "convertAndSendWithMetadata", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeadersBuilder::create("metadata"),
+                                GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            ]
+                        )
                 )
                 ->registerMessageHandler(
                     AmqpOutboundChannelAdapterBuilder::create("exchangeName", "amqpConnection")
@@ -95,33 +104,41 @@ class AmqpPublisherModuleTest extends TestCase
             $this->createMessagingSystemConfiguration()
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "send", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "sendWithMetadata", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeadersBuilder::create("metadata"),
+                                GatewayHeaderBuilder::create("sourceMediaType", MessageHeaders::CONTENT_TYPE)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "convertAndSend", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            ]
+                        )
                 )
                 ->registerGatewayBuilder(
                     GatewayProxyBuilder::create(MessagePublisher::class, MessagePublisher::class, "convertAndSendWithMetadata", MessagePublisher::class)
-                        ->withParameterConverters([
-                            GatewayPayloadBuilder::create("data"),
-                            GatewayHeadersBuilder::create("metadata"),
-                            GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
-                        ])
+                        ->withParameterConverters(
+                            [
+                                GatewayPayloadBuilder::create("data"),
+                                GatewayHeadersBuilder::create("metadata"),
+                                GatewayHeaderValueBuilder::create(MessageHeaders::CONTENT_TYPE, MediaType::APPLICATION_X_PHP)
+                            ]
+                        )
                 )
                 ->registerMessageHandler(
                     AmqpOutboundChannelAdapterBuilder::create("exchangeName", "amqpConnection")
@@ -143,6 +160,18 @@ class AmqpPublisherModuleTest extends TestCase
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON)
                 ]
             )
+        );
+    }
+
+    public function test_throwing_exception()
+    {
+        $this->expectException(ConfigurationException::class);
+
+        $this->prepareConfiguration(
+            [
+                AmqpMessagePublisherConfiguration::create("test", MessagePublisher::class, MediaType::APPLICATION_JSON, "amqpConnection"),
+                AmqpMessagePublisherConfiguration::create("test", MessagePublisher::class, MediaType::APPLICATION_JSON, "amqpConnection")
+            ]
         );
     }
 
@@ -171,9 +200,9 @@ class AmqpPublisherModuleTest extends TestCase
      */
     private function prepareConfiguration(array $extensions): MessagingSystemConfiguration
     {
-        $cqrsMessagingModule = AmqpPublisherModule::create(InMemoryAnnotationRegistrationService::createEmpty());
+        $cqrsMessagingModule = AmqpPublisherModule::create(InMemoryAnnotationFinder::createEmpty());
 
-        $extendedConfiguration = $this->createMessagingSystemConfiguration();
+        $extendedConfiguration        = $this->createMessagingSystemConfiguration();
         $moduleReferenceSearchService = ModuleReferenceSearchService::createEmpty();
 
         $cqrsMessagingModule->prepare(
@@ -183,17 +212,5 @@ class AmqpPublisherModuleTest extends TestCase
         );
 
         return $extendedConfiguration;
-    }
-
-    public function test_throwing_exception()
-    {
-        $this->expectException(ConfigurationException::class);
-
-        $this->prepareConfiguration(
-            [
-                AmqpMessagePublisherConfiguration::create("test", MessagePublisher::class, MediaType::APPLICATION_JSON, "amqpConnection"),
-                AmqpMessagePublisherConfiguration::create("test", MessagePublisher::class, MediaType::APPLICATION_JSON, "amqpConnection")
-            ]
-        );
     }
 }

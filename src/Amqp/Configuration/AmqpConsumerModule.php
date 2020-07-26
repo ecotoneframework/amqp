@@ -4,9 +4,10 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
+use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\MessageConsumer;
-use Ecotone\Messaging\Annotation\MessageEndpoint;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
+use Ecotone\Messaging\Config\Annotation\AnnotatedDefinitionReference;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ParameterConverterAnnotationFactory;
@@ -48,19 +49,16 @@ class AmqpConsumerModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationRegistrationService $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService)
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
-        $amqpConsumers = $annotationRegistrationService->findRegistrationsFor(MessageEndpoint::class, MessageConsumer::class);
+        $amqpConsumers = $annotationRegistrationService->findAnnotatedMethods(MessageConsumer::class);
 
         $amqpInboundChannelAdapters = [];
         $serviceActivators = [];
 
         foreach ($amqpConsumers as $amqpConsumer) {
-            /** @var MessageEndpoint $messageEndpoint */
-            $messageEndpoint = $amqpConsumer->getAnnotationForClass();
-
-            $reference = $messageEndpoint->referenceName ?? $amqpConsumer->getClassName();
+            $reference = AnnotatedDefinitionReference::getReferenceFor($amqpConsumer);
             /** @var MessageConsumer $amqpConsumerAnnotation */
             $amqpConsumerAnnotation = $amqpConsumer->getAnnotationForMethod();
 
