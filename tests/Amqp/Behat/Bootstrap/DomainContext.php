@@ -95,7 +95,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iOrder(string $order)
     {
-        return $this->getCommandBus()->send(new PlaceOrder($order));
+        return $this->getCommandBus()->convertAndSend("order.register", MediaType::APPLICATION_X_PHP, new PlaceOrder($order));
     }
 
     private function getCommandBus(): CommandBus
