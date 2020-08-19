@@ -6,11 +6,13 @@ namespace Ecotone\Amqp;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
 use Ecotone\Enqueue\InboundMessageConverter;
+use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Endpoint\ConsumerLifecycle;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Endpoint\TaskExecutorChannelAdapter\TaskExecutorChannelAdapter;
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
+use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
@@ -77,8 +79,12 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
         $amqpAdmin = $referenceSearchService->get(AmqpAdmin::REFERENCE_NAME);
         /** @var AmqpConnectionFactory $amqpConnectionFactory */
         $amqpConnectionFactory = $referenceSearchService->get($this->amqpConnectionReferenceName);
+        /** @var ConversionService $conversionService */
+        $conversionService = $referenceSearchService->get(ConversionService::REFERENCE_NAME);
 
         $inboundAmqpGateway = $this->buildGatewayFor($referenceSearchService, $channelResolver, $pollingMetadata);
+
+        $headerMapper = DefaultHeaderMapper::createWith($this->headerMapper, [], $conversionService);
         $inboundChannelAdapter = new AmqpInboundChannelAdapter(
             CachedConnectionFactory::createFor(new AmqpConsumerConnectionFactory($amqpConnectionFactory)),
             $inboundAmqpGateway,
@@ -86,7 +92,7 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
             true,
             $this->queueName,
             $this->receiveTimeoutInMilliseconds,
-            new InboundMessageConverter($this->getEndpointId(),$this->acknowledgeMode, AmqpHeader::HEADER_ACKNOWLEDGE, $this->headerMapper),
+            new InboundMessageConverter($this->getEndpointId(),$this->acknowledgeMode, AmqpHeader::HEADER_ACKNOWLEDGE, $headerMapper),
             !$this->withAckInterceptor
         );
         return $inboundChannelAdapter;

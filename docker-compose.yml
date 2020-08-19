@@ -21,3 +21,7 @@ services:
       - default
     ports:
       - "15673:15672"
+networks:
+  default:
+    external:
+      name: ecotone-test
