@@ -31,7 +31,7 @@
         "ecotone/ecotone": "^0.12",
         "ecotone/enqueue": "^0.12",
 
-        "enqueue/amqp-lib": "^0.10.0",
+        "enqueue/amqp-lib": "0.10.2",
         "enqueue/dsn": "^0.10.0",
         "enqueue/enqueue": "^0.10.0"
     },
@@ -49,6 +49,10 @@
         {
             "type": "path",
             "url": "../enqueue"
+        },
+        {
+            "type": "vcs",
+            "url":  "git@github.com:SimplyCodedSoftware/amqp-lib.git"
         }
     ],
     "extra": {
