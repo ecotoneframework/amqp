@@ -43,7 +43,6 @@ class EcotoneRabbitMqDlxDelayStrategy implements DelayStrategy
             $delayQueue->addFlag(AmqpTopic::FLAG_DURABLE);
             $delayQueue->setArgument('x-message-ttl', $delay);
             $delayQueue->setArgument('x-dead-letter-exchange', '');
-            $delayQueue->setArgument('x-dead-letter-routing-key', $dest->getQueueName());
         } else {
             throw new InvalidDestinationException(sprintf('The destination must be an instance of %s but got %s.',
                 AmqpTopic::class.'|'.AmqpQueue::class,
