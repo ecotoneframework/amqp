@@ -26,6 +26,7 @@ use Ecotone\Messaging\Handler\InMemoryReferenceSearchService;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageChannel;
+use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Ecotone\Messaging\Support\MessageBuilder;
@@ -555,38 +556,22 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
         $this->assertNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was did no expire");
     }
 
-    /**
-     * @throws MessagingException
-     */
-    public function test_sending_with_delay()
+    public function test_delaying_the_message()
     {
         $queueName = Uuid::uuid4()->toString();
-        $amqpQueues = [AmqpQueue::createWith($queueName)->withExclusivity()];
-        $amqpExchanges = [];
-        $amqpBindings = [];
-        $requestChannelName = "requestChannel";
-        $inboundRequestChannel = DirectChannel::create();
-        $amqpConnectionReferenceName = "connection";
-        $messageToSend = MessageBuilder::withPayload("some")->build();
-        $converters = [];
-        $inMemoryChannelResolver = $this->createChannelResolver($requestChannelName, $inboundRequestChannel);
-        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
 
-        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
-            ->withDefaultDeliveryDelay(250)
-            ->withDefaultRoutingKey($queueName);
-        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, $messageToSend);
+        $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
+        $amqpBackedMessageChannel->send(
+            MessageBuilder::withPayload("some")
+                ->setHeader(MessageHeaders::DELIVERY_DELAY, 250)
+                ->build()
+        );
 
-        $inboundAmqpAdapter = $this->createAmqpInboundAdapter($queueName, $requestChannelName, $amqpConnectionReferenceName);
-        $inboundQueueChannel = QueueChannel::create();
-        $inboundRequestChannel->subscribe(ForwardMessageHandler::create($inboundQueueChannel));
+        $this->assertNull($amqpBackedMessageChannel->receive());
 
-        $inboundAmqpGateway = $inboundAmqpAdapter
-            ->build($inMemoryChannelResolver, $referenceSearchService, PollingMetadata::create("")->setExecutionTimeLimitInMilliseconds(1));
-        $inboundAmqpGateway->run();
-        $this->assertNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was not delayed");
-        usleep(250000);
-        $this->assertNotNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was not delayed");
+        usleep(300000);
+
+        $this->assertNotNull($amqpBackedMessageChannel->receive());
     }
 
     public function test_receiving_from_dead_letter_queue()
@@ -662,10 +647,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
 
         /** @var Message $message */
         $message = $amqpBackedMessageChannel->receive();
-
-        /** @var AcknowledgementCallback $acknowledgeCallback */
-        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
-        $acknowledgeCallback->accept();
+        $this->acceptMessage($message);
 
         $this->assertNull($amqpBackedMessageChannel->receive());
     }
@@ -749,5 +731,12 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
         return AmqpBackedMessageChannelBuilder::create($queueName, $amqpConnectionReferenceName)
             ->withReceiveTimeout(1)
             ->build($referenceSearchService);
+    }
+
+    private function acceptMessage(Message $message): void
+    {
+        /** @var AcknowledgementCallback $acknowledgeCallback */
+        $acknowledgeCallback = $message->getHeaders()->get(AmqpHeader::HEADER_ACKNOWLEDGE);
+        $acknowledgeCallback->accept();
     }
 }

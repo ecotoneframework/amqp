@@ -112,8 +112,9 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $this->connectionFactory->getProducer()
             ->setTimeToLive($outboundMessage->getTimeToLive())
-            ->setDelayStrategy(new EcotoneRabbitMqDlxDelayStrategy())
+            ->setDelayStrategy(new HeadersExchangeDelayStrategy())
             ->setDeliveryDelay($outboundMessage->getDeliveryDelay())
+//            this allow for having queue per delay instead of queue per delay + exchangeName
             ->send(new AmqpTopic($exchangeName), $messageToSend);
     }
 }

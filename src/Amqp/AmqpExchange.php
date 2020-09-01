@@ -37,6 +37,11 @@ class AmqpExchange
         $this->enqueueExchange->setType($exchangeType);
     }
 
+    public function isHeadersExchange() : bool
+    {
+        return $this->enqueueExchange->getType() === EnqueueExchange::TYPE_HEADERS;
+    }
+
     /**
      * exchanges survive broker restart
      *

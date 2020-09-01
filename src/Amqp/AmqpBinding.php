@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
+use Ecotone\Messaging\Support\Assert;
 use Interop\Amqp\Impl\AmqpBind as EnqueueBinding;
 
 /**
@@ -25,17 +26,11 @@ class AmqpBinding
      */
     private $exchangeName;
 
-    /**
-     * AmqpBinding constructor.
-     * @param AmqpExchange $amqpExchange
-     * @param AmqpQueue $amqpQueue
-     * @param string|null $routingKey
-     */
-    private function __construct(AmqpExchange $amqpExchange, AmqpQueue $amqpQueue, ?string $routingKey)
+    private function __construct(AmqpExchange $amqpExchange, AmqpQueue $amqpQueue, ?string $routingKey, array $arguments)
     {
         $this->queueName = $amqpQueue->getQueueName();
         $this->exchangeName = $amqpExchange->getExchangeName();
-        $this->enqueueBinding = new EnqueueBinding($amqpExchange->toEnqueueExchange(), $amqpQueue->toEnqueueQueue(), $routingKey);
+        $this->enqueueBinding = new EnqueueBinding($amqpExchange->toEnqueueExchange(), $amqpQueue->toEnqueueQueue(), $routingKey, 0, $arguments);
     }
 
     /**
@@ -96,7 +91,7 @@ class AmqpBinding
      */
     public static function createWith(AmqpExchange $amqpExchange, AmqpQueue $amqpQueue, ?string $routingKey) : self
     {
-        return new self($amqpExchange, $amqpQueue, $routingKey);
+        return new self($amqpExchange, $amqpQueue, $routingKey, []);
     }
 
     /**
@@ -106,7 +101,7 @@ class AmqpBinding
      */
     public static function createForDefaultExchange(AmqpQueue $amqpQueue) : self
     {
-        return new self(AmqpExchange::createDirectExchange(""), $amqpQueue, $amqpQueue->getQueueName());
+        return new self(AmqpExchange::createDirectExchange(""), $amqpQueue, $amqpQueue->getQueueName(), []);
     }
 
     /**
@@ -118,7 +113,7 @@ class AmqpBinding
      */
     public static function createFromNames(string $amqpExchangeName, string $amqpQueueName, ?string $routingKey) : self
     {
-        return new self(AmqpExchange::createDirectExchange($amqpExchangeName), AmqpQueue::createWith($amqpQueueName), $routingKey);
+        return new self(AmqpExchange::createDirectExchange($amqpExchangeName), AmqpQueue::createWith($amqpQueueName), $routingKey, []);
     }
 
     /**
@@ -130,6 +125,13 @@ class AmqpBinding
      */
     public static function createFromNamesWithoutRoutingKey(string $amqpExchangeName, string $amqpQueueName) : self
     {
-        return new self(AmqpExchange::createDirectExchange($amqpExchangeName), AmqpQueue::createWith($amqpQueueName), null);
+        return new self(AmqpExchange::createDirectExchange($amqpExchangeName), AmqpQueue::createWith($amqpQueueName), null, []);
+    }
+
+    public static function createHeadersBinding(AmqpExchange $amqpExchange, AmqpQueue $amqpQueueName, array $bindings) : self
+    {
+        Assert::isTrue($amqpExchange->isHeadersExchange(), "Header binding can only be done on headers exchange {$amqpExchange->getExchangeName()} to {$amqpQueueName->getQueueName()}");
+
+        return new self($amqpExchange, $amqpQueueName, null, $bindings);
     }
 }
