@@ -52,10 +52,12 @@ class AmqpTransactionInterceptor
             foreach ($channels as $channel) {
                 $channel->tx_commit();
             }
+            $channel->close(); // need to be closed in order to publish other messages outside of transaction scope.
         }catch (\Throwable $exception) {
             foreach ($channels as $channel) {
                 $channel->tx_rollback();
             }
+            $channel->close();
 
             throw $exception;
         }

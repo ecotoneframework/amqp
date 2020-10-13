@@ -79,6 +79,19 @@ class DomainContext extends TestCase implements Context
                     ];
                 }
                 break;
+            case "Test\Ecotone\Amqp\Fixture\ErrorChannel":
+                {
+                    $objects = [
+                        new \Test\Ecotone\Amqp\Fixture\ErrorChannel\OrderService()
+                    ];
+                }
+                break;
+            case "Test\Ecotone\Amqp\Fixture\DeadLetter":
+                {
+                    $objects = [
+                        new \Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService()
+                    ];
+                }
         }
 
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
@@ -195,5 +208,35 @@ class DomainContext extends TestCase implements Context
         $this->assertNull(
             $this->getQueryBus()->convertAndSend("order.getOrder", MediaType::APPLICATION_X_PHP_ARRAY, [])
         );
+    }
+
+    /**
+     * @Then there should be :amount orders
+     */
+    public function thereShouldBeOrders(int $amount)
+    {
+        $this->assertEquals(
+            $amount,
+            $this->getQueryBus()->convertAndSend("getOrderAmount", MediaType::APPLICATION_X_PHP_ARRAY, [])
+        );
+    }
+
+    /**
+     * @Then there should be :amount incorrect orders
+     */
+    public function thereShouldBeIncorrectOrders(int $amount)
+    {
+        $this->assertEquals(
+            $amount,
+            $this->getQueryBus()->convertAndSend("getIncorrectOrderAmount", MediaType::APPLICATION_X_PHP_ARRAY, [])
+        );
+    }
+
+    /**
+     * @When I call consumer :consumerName
+     */
+    public function iCallConsumer(string $consumerName)
+    {
+        self::$messagingSystem->runSeparatelyRunningEndpointBy($consumerName);
     }
 }

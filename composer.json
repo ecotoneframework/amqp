@@ -41,16 +41,6 @@
         "phan/phan": "^1.2.0",
         "phpstan/phpstan": "^0.12"
     },
-    "repositories": [
-        {
-            "type": "path",
-            "url": "../core"
-        },
-        {
-            "type": "path",
-            "url": "../enqueue"
-        }
-    ],
     "extra": {
         "branch-alias": {
             "dev-master": "0.11.x-dev"
