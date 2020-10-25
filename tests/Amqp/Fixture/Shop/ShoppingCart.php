@@ -12,9 +12,7 @@ class ShoppingCart
 {
     private $shoppingCart = [];
 
-    /**
-     * @CommandHandler(inputChannelName="addToBasket")
-     */
+    #[CommandHandler("addToBasket")]
     public function requestAddingToBasket(string $productName, MessagePublisher $publisher) : void
     {
         $publisher->send($productName);
@@ -26,9 +24,7 @@ class ShoppingCart
         $this->shoppingCart[] = $productName;
     }
 
-    /**
-     * @QueryHandler(inputChannelName="getShoppingCartList")
-     */
+    #[QueryHandler("getShoppingCartList")]
     public function getShoppingCartList() : array
     {
         return $this->shoppingCart;

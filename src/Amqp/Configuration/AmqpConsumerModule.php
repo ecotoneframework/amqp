@@ -17,12 +17,7 @@ use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCall;
 use Ecotone\Messaging\Handler\ServiceActivator\ServiceActivatorBuilder;
 
-/**
- * Class AmqpConsumerModule
- * @package Ecotone\Amqp\Configuration
- * @author Dariusz Gafka <dgafka.mail@gmail.com>
- * @ModuleAnnotation()
- */
+#[ModuleAnnotation]
 class AmqpConsumerModule implements AnnotationModule
 {
     /**
@@ -49,7 +44,7 @@ class AmqpConsumerModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationFinder $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService): static
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
         $amqpConsumers = $annotationRegistrationService->findAnnotatedMethods(MessageConsumer::class);

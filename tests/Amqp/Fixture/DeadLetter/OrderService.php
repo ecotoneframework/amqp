@@ -14,37 +14,26 @@ class OrderService
 
     private int $incorrectOrders = 0;
 
-    /**
-     * @CommandHandler(
-     *     endpointId="orderService",
-     *     inputChannelName="order.register"
-     * )
-     */
+    #[CommandHandler("order.register", "orderService")]
     #[Asynchronous(ErrorConfigurationContext::INPUT_CHANNEL)]
     public function order(string $orderName) : void
     {
         throw new \InvalidArgumentException("exception");
     }
 
-    /**
-     * @QueryHandler(inputChannelName="getOrderAmount")
-     */
+    #[QueryHandler("getOrderAmount")]
     public function getOrder() : int
     {
         return $this->placedOrders;
     }
 
-    /**
-     * @QueryHandler(inputChannelName="getIncorrectOrderAmount")
-     */
+    #[QueryHandler("getIncorrectOrderAmount")]
     public function getIncorrectOrders() : int
     {
         return $this->incorrectOrders;
     }
 
-    /**
-     * @ServiceActivator(inputChannelName="incorrectOrders", endpointId="incorrectOrdersEndpoint")
-     */
+    #[ServiceActivator("incorrectOrders", "incorrectOrdersEndpoint")]
     public function storeIncorrectOrder(string $orderName) : void
     {
         $this->incorrectOrders++;

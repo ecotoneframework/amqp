@@ -15,22 +15,13 @@ class OrderService
      */
     private $orders = [];
 
-    /**
-     * @param PlaceOrder $placeOrder
-     * @CommandHandler(
-     *     inputChannelName="order.register",
-     *     endpointId="orderReceiver"
-     * )
-     */
+    #[CommandHandler("order.register", "orderReceiver")]
     public function register(PlaceOrder $placeOrder) : void
     {
         $this->orders[] = $placeOrder;
     }
 
-    /**
-     * @return array
-     * @QueryHandler(inputChannelName="order.getOrders")
-     */
+    #[QueryHandler("order.getOrders")]
     public function getRegisteredOrders() : array
     {
         return $this->orders;

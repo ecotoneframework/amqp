@@ -18,9 +18,7 @@ use Ecotone\Modelling\CommandBus;
 use Ecotone\Modelling\LazyEventBus\LazyEventBusInterceptor;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
 
-/**
- * @ModuleAnnotation()
- */
+#[ModuleAnnotation]
 class AmqpTransactionConfiguration implements AnnotationModule
 {
     private function __construct()
@@ -30,7 +28,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationFinder $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService): static
     {
         return new self();
     }

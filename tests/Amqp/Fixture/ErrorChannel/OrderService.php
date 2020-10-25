@@ -14,12 +14,7 @@ class OrderService
 
     private int $placedOrders = 0;
 
-    /**
-     * @CommandHandler(
-     *     endpointId="orderService",
-     *     inputChannelName="order.register"
-     * )
-     */
+    #[CommandHandler("order.register", "orderService")]
     #[Asynchronous(ErrorConfigurationContext::INPUT_CHANNEL)]
     public function order(string $orderName) : void
     {
@@ -34,9 +29,7 @@ class OrderService
         throw new \InvalidArgumentException("exception");
     }
 
-    /**
-     * @QueryHandler(inputChannelName="getOrderAmount")
-     */
+    #[QueryHandler("getOrderAmount")]
     public function getOrder() : int
     {
         return $this->placedOrders;

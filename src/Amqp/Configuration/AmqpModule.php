@@ -14,12 +14,7 @@ use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 
-/**
- * Class AmqpModule
- * @package Ecotone\Amqp\Configuration
- * @author Dariusz Gafka <dgafka.mail@gmail.com>
- * @ModuleAnnotation()
- */
+#[ModuleAnnotation]
 class AmqpModule implements AnnotationModule
 {
     private function __construct()
@@ -29,7 +24,7 @@ class AmqpModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationFinder $annotationRegistrationService)
+    public static function create(AnnotationFinder $annotationRegistrationService): static
     {
         return new self();
     }

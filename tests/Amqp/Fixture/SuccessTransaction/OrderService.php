@@ -13,27 +13,19 @@ class OrderService
 {
     private ?string $order = null;
 
-    /**
-     * @param string $order
-     * @param OrderRegisteringGateway $orderRegisteringGateway
-     * @CommandHandler(inputChannelName="order.register")
-     */
+    #[CommandHandler("order.register")]
     public function register(string $order, OrderRegisteringGateway $orderRegisteringGateway): void
     {
         $orderRegisteringGateway->place($order);
     }
 
-    /**
-     * @ServiceActivator(endpointId="placeOrderEndpoint", inputChannelName="placeOrder")
-     */
+    #[ServiceActivator("placeOrder", "placeOrderEndpoint")]
     public function receive(string $order): void
     {
         $this->order = $order;
     }
 
-    /**
-     * @QueryHandler(inputChannelName="order.getOrder")
-     */
+    #[QueryHandler("order.getOrder")]
     public function getOrder() : ?string
     {
         $order = $this->order;
