@@ -20,9 +20,7 @@ class ShoppingCart
         $publisher->send($productName);
     }
 
-    /**
-     * @MessageConsumer(endpointId=MessagingConfiguration::CONSUMER_ID)
-     */
+    #[MessageConsumer(MessagingConfiguration::CONSUMER_ID)]
     public function addToBasket(string $productName) : void
     {
         $this->shoppingCart[] = $productName;

@@ -7,8 +7,6 @@ use Ecotone\Messaging\Annotation\MessageGateway;
 
 interface OrderRegisteringGateway
 {
-    /**
-     * @MessageGateway(requestChannel="placeOrder")
-     */
+    #[MessageGateway("placeOrder")]
     public function place(string $order): void;
 }

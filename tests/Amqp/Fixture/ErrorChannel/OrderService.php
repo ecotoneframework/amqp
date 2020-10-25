@@ -15,12 +15,12 @@ class OrderService
     private int $placedOrders = 0;
 
     /**
-     * @Asynchronous(ErrorConfigurationContext::INPUT_CHANNEL)
      * @CommandHandler(
      *     endpointId="orderService",
      *     inputChannelName="order.register"
      * )
      */
+    #[Asynchronous(ErrorConfigurationContext::INPUT_CHANNEL)]
     public function order(string $orderName) : void
     {
         $this->callCount += 1;

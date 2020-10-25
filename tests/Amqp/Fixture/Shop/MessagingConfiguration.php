@@ -7,31 +7,23 @@ use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
 use Ecotone\Amqp\Configuration\AmqpMessagePublisherConfiguration;
 use Ecotone\Messaging\Annotation\ApplicationContext;
-use Ecotone\Messaging\Annotation\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\MessagePublisher;
 
-/**
- * @ApplicationContext()
- */
 class MessagingConfiguration
 {
-    const CONSUMER_ID = "addToCart";
+    const CONSUMER_ID    = "addToCart";
     const SHOPPING_QUEUE = "shopping";
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function registerPublisher()
     {
         return AmqpMessagePublisherConfiguration::create(MessagePublisher::class)
-                ->withAutoDeclareQueueOnSend(true)
-                ->withDefaultRoutingKey(self::SHOPPING_QUEUE);
+            ->withAutoDeclareQueueOnSend(true)
+            ->withDefaultRoutingKey(self::SHOPPING_QUEUE);
     }
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function registerConsumer()
     {
         return [

@@ -7,9 +7,7 @@ use Ecotone\Messaging\Annotation\Asynchronous;
 use Ecotone\Modelling\Annotation\CommandHandler;
 use Ecotone\Modelling\Annotation\QueryHandler;
 
-/**
- * @Asynchronous(channelName="orders")
- */
+#[Asynchronous("orders")]
 class OrderService
 {
     /**

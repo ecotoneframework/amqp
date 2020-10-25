@@ -5,42 +5,30 @@ namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Dbal\Configuration\DbalConfiguration;
-use Ecotone\Dbal\DbalBackedMessageChannelBuilder;
-use Ecotone\Dbal\Recoverability\DbalDeadLetterBuilder;
 use Ecotone\Messaging\Annotation\ApplicationContext;
-use Ecotone\Messaging\Annotation\Extension;
-use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
 use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
 
-/**
- * @ApplicationContext()
- */
 class ErrorConfigurationContext
 {
-    const INPUT_CHANNEL = "correctOrders";
-    const ERROR_CHANNEL = "errorChannel";
+    const INPUT_CHANNEL       = "correctOrders";
+    const ERROR_CHANNEL       = "errorChannel";
     const DEAD_LETTER_CHANNEL = "incorrectOrders";
 
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function getChannels()
     {
         return [
             AmqpBackedMessageChannelBuilder::create(self::INPUT_CHANNEL)
-              ->withReceiveTimeout(1),
+                ->withReceiveTimeout(1),
             AmqpBackedMessageChannelBuilder::create(self::DEAD_LETTER_CHANNEL)
                 ->withReceiveTimeout(1),
         ];
     }
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function errorConfiguration()
     {
         return ErrorHandlerConfiguration::createWithDeadLetterChannel(
@@ -51,9 +39,7 @@ class ErrorConfigurationContext
         );
     }
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function pollingConfiguration()
     {
         return [
@@ -67,9 +53,7 @@ class ErrorConfigurationContext
         ];
     }
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function registerAmqpConfig(): array
     {
         return [
