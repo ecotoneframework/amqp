@@ -58,11 +58,12 @@ class ErrorConfigurationContext
     {
         return [
             PollingMetadata::create(self::INPUT_CHANNEL)
-                ->setExecutionTimeLimitInMilliseconds(1)
+//                longer period of time, as rabbit during republishing message between queues may have a delay
+                ->setExecutionTimeLimitInMilliseconds(3000)
                 ->setHandledMessageLimit(1)
                 ->setErrorChannelName(self::ERROR_CHANNEL),
             PollingMetadata::create("incorrectOrdersEndpoint")
-                ->setExecutionTimeLimitInMilliseconds(1)
+                ->setExecutionTimeLimitInMilliseconds(3000)
                 ->setHandledMessageLimit(1)
         ];
     }

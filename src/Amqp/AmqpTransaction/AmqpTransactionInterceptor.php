@@ -19,46 +19,55 @@ use Interop\Queue\ConnectionFactory;
 class AmqpTransactionInterceptor
 {
     /**
-     * @var ReferenceSearchService
-     */
-    private $referenceSearchService;
-    /**
      * @var string[]
      */
     private $connectionReferenceNames;
 
-    public function __construct(ReferenceSearchService $referenceSearchService, array $connectionReferenceNames)
+    private bool $isRunningTransaction = false;
+
+    public function __construct(array $connectionReferenceNames)
     {
-        $this->referenceSearchService = $referenceSearchService;
         $this->connectionReferenceNames = $connectionReferenceNames;
     }
 
-    public function transactional(MethodInvocation $methodInvocation, ?AmqpTransaction $amqpTransaction)
+    public function transactional(MethodInvocation $methodInvocation, ?AmqpTransaction $amqpTransaction, ReferenceSearchService $referenceSearchService)
     {;
         /** @var CachedConnectionFactory[] $connectionFactories */
-        $connectionFactories = array_map(function(string $connectionReferenceName){
-            return CachedConnectionFactory::createFor(new AmqpPublisherConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
+        $connectionFactories = array_map(function(string $connectionReferenceName) use ($referenceSearchService) {
+            return CachedConnectionFactory::createFor(new AmqpPublisherConnectionFactory($referenceSearchService->get($connectionReferenceName)));
         }, $amqpTransaction ? $amqpTransaction->connectionReferenceNames : $this->connectionReferenceNames);
 
-        foreach ($connectionFactories as $connectionFactory) {
-            $connectionFactory->createContext()->getLibChannel()->tx_select();
+        if ($this->isRunningTransaction) {
+            return $methodInvocation->proceed();
         }
-        try {
-            $result = $methodInvocation->proceed();
 
+        try {
+            $this->isRunningTransaction = true;
             foreach ($connectionFactories as $connectionFactory) {
-                $connectionFactory->createContext()->getLibChannel()->tx_commit();
-                $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
+                $connectionFactory->createContext()->getLibChannel()->tx_select();
+            }
+            try {
+                $result = $methodInvocation->proceed();
+
+                foreach ($connectionFactories as $connectionFactory) {
+                    $connectionFactory->createContext()->getLibChannel()->tx_commit();
+                    $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
+                }
+            }catch (\Throwable $exception) {
+                foreach ($connectionFactories as $connectionFactory) {
+                    $connectionFactory->createContext()->getLibChannel()->tx_rollback();
+                    $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
+                }
+
+                throw $exception;
             }
         }catch (\Throwable $exception) {
-            foreach ($connectionFactories as $connectionFactory) {
-                $connectionFactory->createContext()->getLibChannel()->tx_rollback();
-                $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
-            }
+            $this->isRunningTransaction = false;
 
             throw $exception;
         }
 
+        $this->isRunningTransaction = false;
         return $result;
     }
 }

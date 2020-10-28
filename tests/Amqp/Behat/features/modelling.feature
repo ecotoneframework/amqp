@@ -10,7 +10,8 @@ Feature: activating as aggregate order entity
   Scenario: I order with transaction a product with failure, so the order should never be placed
     Given I active messaging for namespace "Test\Ecotone\Amqp\Fixture\FailureTransaction"
     When I transactionally order "milk"
-    When I active receiver "placeOrderEndpoint"
+    When I active receiver "placeOrder"
+    And there should be no next order
 
   Scenario: I order with transaction a product with success, so the order should be placed
     Given I active messaging for namespace "Test\Ecotone\Amqp\Fixture\SuccessTransaction"
