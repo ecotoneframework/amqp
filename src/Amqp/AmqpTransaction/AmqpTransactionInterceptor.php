@@ -9,6 +9,7 @@ use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInvocation;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Enqueue\AmqpLib\AmqpContext;
+use Interop\Queue\ConnectionFactory;
 
 /**
  * https://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/
@@ -34,30 +35,26 @@ class AmqpTransactionInterceptor
 
     public function transactional(MethodInvocation $methodInvocation, ?AmqpTransaction $amqpTransaction)
     {;
-        $channels = array_map(function(string $connectionReferenceName){
-            $connectionFactory = CachedConnectionFactory::createFor(new AmqpPublisherConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
-
-            /** @var AmqpContext $context */
-            $context = $connectionFactory->createContext();
-
-            return  $context->getLibChannel();
+        /** @var CachedConnectionFactory[] $connectionFactories */
+        $connectionFactories = array_map(function(string $connectionReferenceName){
+            return CachedConnectionFactory::createFor(new AmqpPublisherConnectionFactory($this->referenceSearchService->get($connectionReferenceName)));
         }, $amqpTransaction ? $amqpTransaction->connectionReferenceNames : $this->connectionReferenceNames);
 
-        foreach ($channels as $channel) {
-            $channel->tx_select();
+        foreach ($connectionFactories as $connectionFactory) {
+            $connectionFactory->createContext()->getLibChannel()->tx_select();
         }
         try {
             $result = $methodInvocation->proceed();
 
-            foreach ($channels as $channel) {
-                $channel->tx_commit();
+            foreach ($connectionFactories as $connectionFactory) {
+                $connectionFactory->createContext()->getLibChannel()->tx_commit();
+                $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
             }
-            $channel->close(); // need to be closed in order to publish other messages outside of transaction scope.
         }catch (\Throwable $exception) {
-            foreach ($channels as $channel) {
-                $channel->tx_rollback();
+            foreach ($connectionFactories as $connectionFactory) {
+                $connectionFactory->createContext()->getLibChannel()->tx_rollback();
+                $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
             }
-            $channel->close();
 
             throw $exception;
         }
