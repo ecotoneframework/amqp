@@ -47,7 +47,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         $connectionFactories = [AmqpConnectionFactory::class];
-        $pointcut = "@(" . AmqpTransaction::class . ")";
+        $pointcut = AmqpTransaction::class;
         $amqpConfiguration = AmqpConfiguration::createWithDefaults();
         foreach ($extensionObjects as $extensionObject) {
             if ($extensionObject instanceof AmqpConfiguration) {
@@ -56,7 +56,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
         }
 
         if ($amqpConfiguration->isDefaultTransactionOnAsynchronousEndpoints()) {
-            $pointcut .= "||@(" . AsynchronousRunningEndpoint::class . ")";
+            $pointcut .= "||" . AsynchronousRunningEndpoint::class;
         }
         if ($amqpConfiguration->isDefaultTransactionOnCommandBus()) {
             $pointcut .= "||" . CommandBus::class . "";
