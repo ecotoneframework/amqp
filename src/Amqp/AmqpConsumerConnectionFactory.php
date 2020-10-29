@@ -28,6 +28,10 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
     public function createContext(): Context
     {
+        if (!$this->isConnected()) {
+            $this->reconnect();;
+        }
+
         return $this->connectionFactory->createContext();
 // this caused context to stay in memory, which in result leads to out of file descriptors
 //        $heartbeatOnTick = $this->connectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
@@ -68,10 +72,33 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
     public function reconnect(): void
     {
+        $connectionProperty = $this->getConnectionProperty();
+
+        /** @var AMQPConnection $connection */
+        $connection = $connectionProperty->getValue($this->connectionFactory);
+        if ($connection) {
+            $connection->close();
+        }
+
+        $connectionProperty->setValue($this->connectionFactory, null);
+    }
+
+    private function isConnected() : bool
+    {
+        $connectionProperty = $this->getConnectionProperty();
+        /** @var AMQPConnection $connection */
+        $connection = $connectionProperty->getValue($this->connectionFactory);
+
+        return $connection ? $connection->isConnected() : false;
+    }
+
+    private function getConnectionProperty(): \ReflectionProperty
+    {
         $reflectionClass = new ReflectionClass($this->connectionFactory);
 
         $connectionProperty = $reflectionClass->getProperty("connection");
         $connectionProperty->setAccessible(true);
-        $connectionProperty->setValue($this->connectionFactory, null);
+
+        return $connectionProperty;
     }
 }
