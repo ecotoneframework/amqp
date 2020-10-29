@@ -51,7 +51,6 @@ class AmqpTransactionInterceptor
 
                 foreach ($connectionFactories as $connectionFactory) {
                     $connectionFactory->createContext()->getLibChannel()->tx_commit();
-                    $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
                 }
             }catch (\Throwable $exception) {
                 foreach ($connectionFactories as $connectionFactory) {
