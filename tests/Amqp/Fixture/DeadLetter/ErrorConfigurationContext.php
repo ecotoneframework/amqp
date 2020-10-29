@@ -67,16 +67,4 @@ class ErrorConfigurationContext
                 ->setHandledMessageLimit(1)
         ];
     }
-
-    /**
-     * @Extension()
-     */
-    public function registerAmqpConfig(): array
-    {
-        return [
-            AmqpConfiguration::createWithDefaults()
-                ->withTransactionOnAsynchronousEndpoints(true)
-                ->withTransactionOnCommandBus(true)
-        ];
-    }
 }
