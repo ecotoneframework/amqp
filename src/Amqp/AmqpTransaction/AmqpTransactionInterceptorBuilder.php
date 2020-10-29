@@ -11,14 +11,11 @@ use Interop\Amqp\AmqpConnectionFactory;
 
 class AmqpTransactionInterceptorBuilder implements AroundInterceptorObjectBuilder
 {
-    /**
-     * @var array
-     */
-    private $connectionReferenceNames = [];
+    private AmqpTransactionInterceptor $amqpTransactionInterceptor;
 
-    public function __construct(array $connectionReferenceNames)
+    public function __construct(AmqpTransactionInterceptor $amqpTransactionInterceptor)
     {
-        $this->connectionReferenceNames = $connectionReferenceNames;
+        $this->amqpTransactionInterceptor = $amqpTransactionInterceptor;
     }
 
     /**
@@ -31,7 +28,7 @@ class AmqpTransactionInterceptorBuilder implements AroundInterceptorObjectBuilde
 
     public function build(ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService): object
     {
-        return new AmqpTransactionInterceptor($referenceSearchService, $this->connectionReferenceNames);
+        return $this->amqpTransactionInterceptor;
     }
 
     /**

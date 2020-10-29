@@ -28,21 +28,25 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
     public function createContext(): Context
     {
-        $context = $this->connectionFactory->createContext();
-
-        $heartbeatOnTick = $this->connectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
-        if ($heartbeatOnTick) {
-            register_tick_function(function (\Interop\Amqp\AmqpContext $context) {
-                /** @var AMQPLazyConnection|AMQPConnection|null $connection */
-                $connection = $context->getLibChannel()->getConnection();
-
-                if ($connection) {
-                    $connection->checkHeartBeat();
-                }
-            }, $context);
+        if (!$this->isConnected()) {
+            $this->reconnect();;
         }
 
-        return $context;
+        return $this->connectionFactory->createContext();
+// this caused context to stay in memory, which in result leads to out of file descriptors
+//        $heartbeatOnTick = $this->connectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
+//        if ($heartbeatOnTick) {
+//            register_tick_function(function (\Interop\Amqp\AmqpContext $context) {
+//                /** @var AMQPLazyConnection|AMQPConnection|null $connection */
+//                $connection = $context->getLibChannel()->getConnection();
+//
+//                if ($connection) {
+//                    $connection->checkHeartBeat();
+//                }
+//            }, $context);
+//        }
+//
+//        return $context;
     }
 
     public function getConnectionInstanceId(): int
@@ -68,10 +72,33 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
     public function reconnect(): void
     {
+        $connectionProperty = $this->getConnectionProperty();
+
+        /** @var AMQPConnection $connection */
+        $connection = $connectionProperty->getValue($this->connectionFactory);
+        if ($connection) {
+            $connection->close();
+        }
+
+        $connectionProperty->setValue($this->connectionFactory, null);
+    }
+
+    private function isConnected() : bool
+    {
+        $connectionProperty = $this->getConnectionProperty();
+        /** @var AMQPConnection $connection */
+        $connection = $connectionProperty->getValue($this->connectionFactory);
+
+        return $connection ? $connection->isConnected() : false;
+    }
+
+    private function getConnectionProperty(): \ReflectionProperty
+    {
         $reflectionClass = new ReflectionClass($this->connectionFactory);
 
         $connectionProperty = $reflectionClass->getProperty("connection");
         $connectionProperty->setAccessible(true);
-        $connectionProperty->setValue($this->connectionFactory, null);
+
+        return $connectionProperty;
     }
 }

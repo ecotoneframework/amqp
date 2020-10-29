@@ -4,8 +4,6 @@ declare(strict_types=1);
 namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
 use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
@@ -44,22 +42,13 @@ class ErrorConfigurationContext
     {
         return [
             PollingMetadata::create(self::INPUT_CHANNEL)
-                ->setExecutionTimeLimitInMilliseconds(1)
+//                longer period of time, as rabbit during republishing message between queues may have a delay
+                ->setExecutionTimeLimitInMilliseconds(3000)
                 ->setHandledMessageLimit(1)
                 ->setErrorChannelName(self::ERROR_CHANNEL),
             PollingMetadata::create("incorrectOrdersEndpoint")
-                ->setExecutionTimeLimitInMilliseconds(1)
+                ->setExecutionTimeLimitInMilliseconds(3000)
                 ->setHandledMessageLimit(1)
-        ];
-    }
-
-    #[ApplicationContext]
-    public function registerAmqpConfig(): array
-    {
-        return [
-            AmqpConfiguration::createWithDefaults()
-                ->withTransactionOnAsynchronousEndpoints(true)
-                ->withTransactionOnCommandBus(true)
         ];
     }
 }

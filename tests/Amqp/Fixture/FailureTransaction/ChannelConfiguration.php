@@ -16,10 +16,9 @@ class ChannelConfiguration
         return [
             AmqpBackedMessageChannelBuilder::create("placeOrder")
                 ->withReceiveTimeout(1),
-            PollingMetadata::create("placeOrderEndpoint")
+            PollingMetadata::create("placeOrder")
                 ->setHandledMessageLimit(1)
-                ->setExecutionTimeLimitInMilliseconds(1)
-                ->setErrorChannelName("errorChannel"),
+                ->setExecutionTimeLimitInMilliseconds(1),
             AmqpConfiguration::createWithDefaults()
                 ->withTransactionOnAsynchronousEndpoints(true)
                 ->withTransactionOnCommandBus(true)
