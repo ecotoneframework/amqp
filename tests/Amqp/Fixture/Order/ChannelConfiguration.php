@@ -16,15 +16,17 @@ use Ecotone\Messaging\Endpoint\PollingMetadata;
  */
 class ChannelConfiguration
 {
+    const QUEUE_NAME = "orders";
+
     /**
      * @Extension()
      */
     public function registerAsyncChannel() : array
     {
         return [
-            AmqpBackedMessageChannelBuilder::create("orders")
+            AmqpBackedMessageChannelBuilder::create(self::QUEUE_NAME)
                 ->withReceiveTimeout(100),
-            PollingMetadata::create("orders")
+            PollingMetadata::create(self::QUEUE_NAME)
                 ->setExecutionTimeLimitInMilliseconds(1)
                 ->setHandledMessageLimit(1)
                 ->setErrorChannelName("errorChannel")

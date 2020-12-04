@@ -17,12 +17,16 @@ use Ecotone\Modelling\AggregateNotFoundException;
 use Ecotone\Modelling\CommandBus;
 use Ecotone\Modelling\QueryBus;
 use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Interop\Amqp\Impl\AmqpQueue;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionException;
+use Test\Ecotone\Amqp\Fixture\ErrorChannel\ErrorConfigurationContext;
+use Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError\ChannelConfiguration;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
 use Test\Ecotone\Amqp\Fixture\Order\PlaceOrder;
+use Test\Ecotone\Amqp\Fixture\Shop\MessagingConfiguration;
 use Test\Ecotone\Amqp\Fixture\Shop\ShoppingCart;
 use Test\Ecotone\Modelling\Fixture\OrderAggregate\OrderErrorHandler;
 
@@ -91,16 +95,34 @@ class DomainContext extends TestCase implements Context
                     $objects = [
                         new \Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService()
                     ];
+                    break;
+                }
+            case "Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError":
+                {
+                    $objects = [
+                        new \Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError\OrderService()
+                    ];
+                    break;
                 }
         }
 
+        $amqpConnectionFactory = new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"]);
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
             __DIR__ . "/../../../../",
-            InMemoryPSRContainer::createFromObjects(array_merge($objects, [new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"])])),
+            InMemoryPSRContainer::createFromObjects(array_merge($objects, [$amqpConnectionFactory])),
             ApplicationConfiguration::createWithDefaults()
                 ->withNamespaces([$namespace])
                 ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
         );
+
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ChannelConfiguration::QUEUE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\FailureTransaction\ChannelConfiguration::QUEUE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\SuccessTransaction\ChannelConfiguration::QUEUE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(MessagingConfiguration::SHOPPING_QUEUE));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\Order\ChannelConfiguration::QUEUE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ErrorConfigurationContext::INPUT_CHANNEL));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\DeadLetter\ErrorConfigurationContext::INPUT_CHANNEL));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\DeadLetter\ErrorConfigurationContext::DEAD_LETTER_CHANNEL));
     }
 
     /**

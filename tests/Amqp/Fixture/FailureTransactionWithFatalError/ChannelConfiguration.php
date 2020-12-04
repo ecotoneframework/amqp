@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
+namespace Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
