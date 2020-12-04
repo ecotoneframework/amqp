@@ -19,7 +19,7 @@ class OrderService
     #[CommandHandler("order.register")]
     public function register(string $order, CommandBus $commandBus): void
     {
-        $commandBus->convertAndSend("makeOrder", MediaType::APPLICATION_X_PHP, $order);
+        $commandBus->sendWithRouting("makeOrder", $order);
 
         throw new InvalidArgumentException("test");
     }

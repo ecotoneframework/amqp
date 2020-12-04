@@ -13,7 +13,7 @@ use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageChannel;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 /**
  * Class AmqpBackedMessageChannelBuilder
@@ -22,19 +22,9 @@ use Enqueue\AmqpLib\AmqpConnectionFactory;
  */
 class AmqpBackedMessageChannelBuilder extends EnqueueMessageChannelBuilder
 {
-    /**
-     * @var AmqpInboundChannelAdapterBuilder
-     */
-    private $inboundChannelAdapter;
-
-    /**
-     * @var string
-     */
-    private $amqpConnectionReferenceName;
-    /**
-     * @var AmqpOutboundChannelAdapterBuilder
-     */
-    private $outboundChannelAdapter;
+    private AmqpInboundChannelAdapterBuilder $inboundChannelAdapter;
+    private string $amqpConnectionReferenceName;
+    private AmqpOutboundChannelAdapterBuilder $outboundChannelAdapter;
 
     /**
      * AmqpBackedMessageChannelBuilder constructor.

@@ -7,11 +7,8 @@ namespace Ecotone\Amqp;
 use Ecotone\Enqueue\ReconnectableConnectionFactory;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\Assert;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
-use Enqueue\AmqpLib\AmqpContext;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Interop\Queue\Context;
-use PhpAmqpLib\Connection\AMQPConnection;
-use PhpAmqpLib\Connection\AMQPLazyConnection;
 use ReflectionClass;
 
 class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
@@ -33,20 +30,6 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
         }
 
         return $this->connectionFactory->createContext();
-// this caused context to stay in memory, which in result leads to out of file descriptors
-//        $heartbeatOnTick = $this->connectionFactory->getConfig()->getOption('heartbeat_on_tick', true);
-//        if ($heartbeatOnTick) {
-//            register_tick_function(function (\Interop\Amqp\AmqpContext $context) {
-//                /** @var AMQPLazyConnection|AMQPConnection|null $connection */
-//                $connection = $context->getLibChannel()->getConnection();
-//
-//                if ($connection) {
-//                    $connection->checkHeartBeat();
-//                }
-//            }, $context);
-//        }
-//
-//        return $context;
     }
 
     public function getConnectionInstanceId(): int

@@ -3,9 +3,8 @@
 namespace Test\Ecotone\Amqp;
 
 use Interop\Amqp\AmqpConnectionFactory;
-use Enqueue\AmqpLib\AmqpConnectionFactory as AmqpLibConnection;
+use Enqueue\AmqpExt\AmqpConnectionFactory as AmqpLibConnection;
 use PHPUnit\Framework\TestCase;
-use Ecotone\Amqp\CachedAmqpConnectionFactory;
 
 /**
  * Class RabbitmqMessagingTest
@@ -34,9 +33,7 @@ abstract class AmqpMessagingTest extends TestCase
     public function getRabbitConnectionFactory() : AmqpConnectionFactory
     {
         $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "localhost";
-        $config = [
-            "dsn" => "amqp://{$host}:5672"
-        ];
+        $config = "amqp://{$host}:5672";
 
         return new AmqpLibConnection($config);
     }

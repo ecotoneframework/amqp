@@ -32,14 +32,6 @@ class AmqpModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public function getName(): string
-    {
-        return "amqpModule";
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         $amqpExchanges = [];

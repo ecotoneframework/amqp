@@ -4,3 +4,5 @@
 [![Latest Stable Version](https://poser.pugx.org/ecotone/amqp/v/stable)](https://packagist.org/packages/ecotone/amqp)
 
 Provides integration for AMQP with [Ecotone](https://github.com/ecotoneframework/ecotone).
+
+https://github.com/php-amqp/php-amqp/pull/383

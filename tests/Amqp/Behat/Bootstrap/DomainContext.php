@@ -13,11 +13,9 @@ use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
-use Ecotone\Modelling\AggregateNotFoundException;
 use Ecotone\Modelling\CommandBus;
 use Ecotone\Modelling\QueryBus;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
-use PHPUnit\Framework\Assert;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionException;
@@ -108,7 +106,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iOrder(string $order)
     {
-        return $this->getCommandBus()->convertAndSend("order.register", MediaType::APPLICATION_X_PHP, new PlaceOrder($order));
+        return $this->getCommandBus()->sendWithRouting("order.register", new PlaceOrder($order));
     }
 
     private function getCommandBus(): CommandBus
@@ -132,7 +130,7 @@ class DomainContext extends TestCase implements Context
     {
         $this->assertEquals(
             [new PlaceOrder($order)],
-            $this->getQueryBus()->convertAndSend("order.getOrders", MediaType::APPLICATION_X_PHP, [])
+            $this->getQueryBus()->sendWithRouting("order.getOrders", [])
         );
     }
 
@@ -148,7 +146,7 @@ class DomainContext extends TestCase implements Context
     {
         $this->assertEquals(
             [],
-            $this->getQueryBus()->convertAndSend("order.getOrders", MediaType::APPLICATION_X_PHP, [])
+            $this->getQueryBus()->sendWithRouting("order.getOrders", [])
         );
     }
 
@@ -185,7 +183,7 @@ class DomainContext extends TestCase implements Context
 
        $this->assertEquals(
            [$productName],
-           $queryBus->convertAndSend("getShoppingCartList", MediaType::APPLICATION_X_PHP, [])
+           $queryBus->sendWithRouting("getShoppingCartList", [])
        );
     }
 
@@ -196,7 +194,7 @@ class DomainContext extends TestCase implements Context
     {
         $this->assertEquals(
             $orderName,
-            $this->getQueryBus()->convertAndSend("order.getOrder", MediaType::APPLICATION_X_PHP_ARRAY, [])
+            $this->getQueryBus()->sendWithRouting("order.getOrder", [])
         );
     }
 
@@ -206,7 +204,7 @@ class DomainContext extends TestCase implements Context
     public function thereShouldBeNoOrder(string $orderName)
     {
         $this->assertNull(
-            $this->getQueryBus()->convertAndSend("order.getOrder", MediaType::APPLICATION_X_PHP_ARRAY, [])
+            $this->getQueryBus()->sendWithRouting("order.getOrder", [])
         );
     }
 
@@ -217,7 +215,7 @@ class DomainContext extends TestCase implements Context
     {
         $this->assertEquals(
             $amount,
-            $this->getQueryBus()->convertAndSend("getOrderAmount", MediaType::APPLICATION_X_PHP_ARRAY, [])
+            $this->getQueryBus()->sendWithRouting("getOrderAmount", [])
         );
     }
 
@@ -228,7 +226,7 @@ class DomainContext extends TestCase implements Context
     {
         $this->assertEquals(
             $amount,
-            $this->getQueryBus()->convertAndSend("getIncorrectOrderAmount", MediaType::APPLICATION_X_PHP_ARRAY, [])
+            $this->getQueryBus()->sendWithRouting("getIncorrectOrderAmount", [])
         );
     }
 

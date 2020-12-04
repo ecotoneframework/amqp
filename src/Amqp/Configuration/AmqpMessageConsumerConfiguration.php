@@ -3,7 +3,7 @@
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 class AmqpMessageConsumerConfiguration
 {
@@ -19,7 +19,7 @@ class AmqpMessageConsumerConfiguration
     /**
      * @var string
      */
-    private $amqpConnectionReferenceName = AmqpConnectionFactory::class;
+    private $amqpConnectionReferenceName;
     /**
      * comma separated list of headers to be mapped. (e.g. "\*" or "thing1*, thing2" or "*thing1")
      *

@@ -61,21 +61,13 @@ class AmqpConsumerModule implements AnnotationModule
             $serviceActivators[$endpointId] = ServiceActivatorBuilder::create($reference, $amqpConsumer->getMethodName())
                 ->withEndpointId($endpointId . ".target")
                 ->withInputChannelName($endpointId)
-                ->withMethodParameterConverters($annotationParameterBuilder->createParameterConvertersWithReferences(
+                ->withMethodParameterConverters($annotationParameterBuilder->createParameterWithDefaults(
                     InterfaceToCall::create($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
                     false
                 ));
         }
 
         return new self($amqpInboundChannelAdapters, $serviceActivators);
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getName(): string
-    {
-        return "amqpConsumerModule";
     }
 
     /**

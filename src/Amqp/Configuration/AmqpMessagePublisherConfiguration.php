@@ -3,10 +3,7 @@
 
 namespace Ecotone\Amqp\Configuration;
 
-use Ecotone\Amqp\AmqpPublisher;
-use Ecotone\Messaging\Annotation\ModuleAnnotation;
-use Ecotone\Messaging\Conversion\MediaType;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Exception;
 
 /**

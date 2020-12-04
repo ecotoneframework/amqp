@@ -7,16 +7,15 @@ namespace Ecotone\Amqp\AmqpTransaction;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\AsynchronousRunningEndpoint;
+use Ecotone\Messaging\Annotation\ConsoleCommand;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
-use Ecotone\Messaging\Annotation\PollableEndpoint;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
 use Ecotone\Messaging\Precedence;
 use Ecotone\Modelling\CommandBus;
-use Ecotone\Modelling\LazyEventBus\LazyEventBusInterceptor;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 #[ModuleAnnotation]
 class AmqpTransactionConfiguration implements AnnotationModule
@@ -36,14 +35,6 @@ class AmqpTransactionConfiguration implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public function getName(): string
-    {
-        return "amqpTransactionModule";
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         $connectionFactories = [AmqpConnectionFactory::class];
@@ -55,11 +46,14 @@ class AmqpTransactionConfiguration implements AnnotationModule
             }
         }
 
-        if ($amqpConfiguration->isDefaultTransactionOnAsynchronousEndpoints()) {
+        if ($amqpConfiguration->isTransactionOnAsynchronousEndpoints()) {
             $pointcut .= "||" . AsynchronousRunningEndpoint::class;
         }
-        if ($amqpConfiguration->isDefaultTransactionOnCommandBus()) {
+        if ($amqpConfiguration->isTransactionOnCommandBus()) {
             $pointcut .= "||" . CommandBus::class . "";
+        }
+        if ($amqpConfiguration->isTransactionOnConsoleCommands()) {
+            $pointcut .= "||" . ConsoleCommand::class . "";
         }
         if ($amqpConfiguration->getDefaultConnectionReferenceNames()) {
             $connectionFactories = $amqpConfiguration->getDefaultConnectionReferenceNames();
@@ -67,12 +61,12 @@ class AmqpTransactionConfiguration implements AnnotationModule
 
         $configuration
             ->registerAroundMethodInterceptor(
-                AroundInterceptorReference::createWithObjectBuilder(
-                    AmqpTransactionInterceptor::class,
-                    new AmqpTransactionInterceptorBuilder(new AmqpTransactionInterceptor($connectionFactories)),
+                AroundInterceptorReference::createWithDirectObject(
+                    new AmqpTransactionInterceptor($connectionFactories),
                     "transactional",
                     Precedence::DATABASE_TRANSACTION_PRECEDENCE - 1,
-                    $pointcut
+                    $pointcut,
+                    []
                 )
             );
     }

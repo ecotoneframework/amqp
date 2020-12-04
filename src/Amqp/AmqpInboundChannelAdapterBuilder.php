@@ -13,7 +13,7 @@ use Ecotone\Messaging\Endpoint\TaskExecutorChannelAdapter\TaskExecutorChannelAda
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 /**
  * Class InboundEnqueueGatewayBuilder

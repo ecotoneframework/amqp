@@ -4,21 +4,19 @@
 namespace Ecotone\Amqp\Configuration;
 
 
-use Interop\Amqp\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 class AmqpConfiguration
 {
-    const DEFAULT_TRANSACTION_ON_POLLABLE_ENDPOINTS = true;
-    const DEFAULT_TRANSACTION_ON_COMMAND_BUS = true;
+    const DEFAULT_TRANSACTION_ON_ASYNCHRONOUS_ENDPOINTS = true;
+    const DEFAULT_TRANSACTION_ON_COMMAND_BUS            = true;
+    const DEFAULT_TRANSACTION_ON_CONSOLE_COMMANDS = true;
 
-    private $defaultTransactionOnPollableEndpoints = self::DEFAULT_TRANSACTION_ON_POLLABLE_ENDPOINTS;
+    private bool $transactionOnAsynchronousEndpoints = self::DEFAULT_TRANSACTION_ON_ASYNCHRONOUS_ENDPOINTS;
+    private bool $transactionOnCommandBus = self::DEFAULT_TRANSACTION_ON_COMMAND_BUS;
+    private bool $transactionOnConsoleCommands = self::DEFAULT_TRANSACTION_ON_CONSOLE_COMMANDS;
 
-    private $defaultTransactionOnCommandBus = self::DEFAULT_TRANSACTION_ON_COMMAND_BUS;
-
-    /**
-     * @var array
-     */
-    private $defaultConnectionReferenceNames = [];
+    private array $defaultConnectionReferenceNames = [];
 
     private function __construct()
     {
@@ -31,16 +29,24 @@ class AmqpConfiguration
 
     public function withTransactionOnAsynchronousEndpoints(bool $isTransactionEnabled) : self
     {
-        $self = clone $this;
-        $self->defaultTransactionOnPollableEndpoints = $isTransactionEnabled;
+        $self                                     = clone $this;
+        $self->transactionOnAsynchronousEndpoints = $isTransactionEnabled;
 
         return $self;
     }
 
     public function withTransactionOnCommandBus(bool $isTransactionEnabled) : self
     {
-        $self = clone $this;
-        $self->defaultTransactionOnCommandBus = $isTransactionEnabled;
+        $self                          = clone $this;
+        $self->transactionOnCommandBus = $isTransactionEnabled;
+
+        return $self;
+    }
+
+    public function withTransactionOnConsoleCommands(bool $isTransactionEnabled) : self
+    {
+        $self                          = clone $this;
+        $self->transactionOnConsoleCommands = $isTransactionEnabled;
 
         return $self;
     }
@@ -53,25 +59,21 @@ class AmqpConfiguration
         return $self;
     }
 
-    /**
-     * @return bool
-     */
-    public function isDefaultTransactionOnAsynchronousEndpoints(): bool
+    public function isTransactionOnAsynchronousEndpoints(): bool
     {
-        return $this->defaultTransactionOnPollableEndpoints;
+        return $this->transactionOnAsynchronousEndpoints;
     }
 
-    /**
-     * @return bool
-     */
-    public function isDefaultTransactionOnCommandBus(): bool
+    public function isTransactionOnCommandBus(): bool
     {
-        return $this->defaultTransactionOnCommandBus;
+        return $this->transactionOnCommandBus;
     }
 
-    /**
-     * @return array
-     */
+    public function isTransactionOnConsoleCommands(): bool
+    {
+        return $this->transactionOnConsoleCommands;
+    }
+
     public function getDefaultConnectionReferenceNames(): array
     {
         return $this->defaultConnectionReferenceNames;
