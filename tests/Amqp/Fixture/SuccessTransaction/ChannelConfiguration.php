@@ -10,11 +10,13 @@ use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class ChannelConfiguration
 {
+    const QUEUE_NAME = "placeOrder";
+
     #[ApplicationContext]
     public function registerCommandChannel(): array
     {
         return [
-            AmqpBackedMessageChannelBuilder::create("placeOrder")
+            AmqpBackedMessageChannelBuilder::create(self::QUEUE_NAME)
                 ->withReceiveTimeout(1),
             PollingMetadata::create("placeOrderEndpoint")
                 ->setHandledMessageLimit(1)

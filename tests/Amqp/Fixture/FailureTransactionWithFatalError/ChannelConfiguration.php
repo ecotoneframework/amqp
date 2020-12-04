@@ -1,18 +1,27 @@
 <?php
 
 
-namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
+namespace Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Messaging\Annotation\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
+/**
+ * Class ChannelConfiguration
+ * @package Test\Ecotone\Amqp\Fixture\Order
+ * @author Dariusz Gafka <dgafka.mail@gmail.com>
+ * @ApplicationContext()
+ */
 class ChannelConfiguration
 {
     const QUEUE_NAME = "placeOrder";
 
-    #[ApplicationContext]
+    /**
+     * @Extension()
+     */
     public function registerCommandChannel(): array
     {
         return [
