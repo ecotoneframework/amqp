@@ -11,12 +11,12 @@ use Ecotone\Modelling\Annotation\QueryHandler;
 class OrderService
 {
     /**
-     * @var PlaceOrder[]
+     * @var string[]
      */
     private $orders = [];
 
     #[CommandHandler("order.register", "orderReceiver")]
-    public function register(PlaceOrder $placeOrder) : void
+    public function register(string $placeOrder) : void
     {
         $this->orders[] = $placeOrder;
     }

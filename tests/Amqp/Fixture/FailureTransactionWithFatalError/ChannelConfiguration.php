@@ -9,19 +9,11 @@ use Ecotone\Messaging\Annotation\ApplicationContext;
 use Ecotone\Messaging\Annotation\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
-/**
- * Class ChannelConfiguration
- * @package Test\Ecotone\Amqp\Fixture\Order
- * @author Dariusz Gafka <dgafka.mail@gmail.com>
- * @ApplicationContext()
- */
 class ChannelConfiguration
 {
     const QUEUE_NAME = "placeOrder";
 
-    /**
-     * @Extension()
-     */
+    #[ApplicationContext]
     public function registerCommandChannel(): array
     {
         return [

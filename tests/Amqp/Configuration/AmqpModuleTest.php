@@ -25,7 +25,7 @@ use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\PollableChannel;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Ecotone\Messaging\Support\MessageBuilder;
-use Enqueue\AmqpLib\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use ReflectionException;
 use Test\Ecotone\Amqp\AmqpMessagingTest;
 
@@ -92,13 +92,6 @@ class AmqpModuleTest extends AmqpMessagingTest
         );
     }
 
-    /**
-     * @param AnnotationRegistrationService $annotationRegistrationService
-     * @param array                         $extensions
-     *
-     * @return MessagingSystemConfiguration
-     * @throws MessagingException
-     */
     private function prepareConfigurationAndRetrieveAmqpAdmin(array $extensions): AmqpAdmin
     {
         $moduleReferenceSearchService = $this->prepareConfiguration($extensions);

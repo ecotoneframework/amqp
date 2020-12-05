@@ -129,7 +129,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iOrder(string $order)
     {
-        return $this->getCommandBus()->sendWithRouting("order.register", new PlaceOrder($order));
+        return $this->getCommandBus()->sendWithRouting("order.register", $order);
     }
 
     private function getCommandBus(): CommandBus
@@ -152,7 +152,7 @@ class DomainContext extends TestCase implements Context
     public function onTheOrderListIShouldSee(string $order)
     {
         $this->assertEquals(
-            [new PlaceOrder($order)],
+            [$order],
             $this->getQueryBus()->sendWithRouting("order.getOrders", [])
         );
     }
@@ -178,10 +178,11 @@ class DomainContext extends TestCase implements Context
      */
     public function iTransactionallyOrder(string $order)
     {
+        /** @var CommandBus $commandBus */
         $commandBus = self::$messagingSystem->getGatewayByName(CommandBus::class);
 
         try {
-            $commandBus->convertAndSend("order.register", MediaType::APPLICATION_X_PHP, $order);
+            $commandBus->sendWithRouting("order.register", $order);
         } catch (\InvalidArgumentException $e) {
         }
     }
@@ -191,9 +192,10 @@ class DomainContext extends TestCase implements Context
      */
     public function iAddProductToShoppingCart(string $productName)
     {
+        /** @var CommandBus $commandBus */
         $commandBus = self::$messagingSystem->getGatewayByName(CommandBus::class);
 
-        $commandBus->convertAndSend("addToBasket", MediaType::APPLICATION_X_PHP, $productName);
+        $commandBus->sendWithRouting("addToBasket", $productName);
     }
 
     /**

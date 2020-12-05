@@ -16,27 +16,21 @@ class OrderService
 {
     private $order = null;
 
-    /**
-     * @CommandHandler(inputChannelName="order.register")
-     */
+    #[CommandHandler("order.register")]
     public function register(string $order, CommandBus $commandBus): void
     {
-        $commandBus->convertAndSend("makeOrder", MediaType::APPLICATION_X_PHP, $order);
+        $commandBus->sendWithRouting("makeOrder", $order);
     }
 
-    /**
-     * @Asynchronous("placeOrder")
-     * @CommandHandler(endpointId="placeOrderEndpoint", inputChannelName="makeOrder")
-     */
+    #[Asynchronous("placeOrder")]
+    #[CommandHandler("makeOrder", "placeOrderEndpoint")]
     public function placeOrder(string $order): void
     {
         $this->eventBus->publish("orderWasPlaced");
         $this->order = $order;
     }
 
-    /**
-     * @QueryHandler(inputChannelName="order.getOrder")
-     */
+    #[QueryHandler("order.getOrder")]
     public function getOrder() : ?string
     {
         $order = $this->order;

@@ -8,6 +8,7 @@ use Ecotone\Enqueue\ReconnectableConnectionFactory;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\Assert;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
+use Enqueue\AmqpExt\AmqpContext;
 use Interop\Queue\Context;
 use ReflectionClass;
 
@@ -39,8 +40,6 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
     /**
      * @param Context|AmqpContext|null $context
-     * @return bool
-     * @throws MessagingException
      */
     public function isDisconnected(?Context $context): bool
     {
@@ -50,17 +49,17 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
 
         Assert::isSubclassOf($context, AmqpContext::class, "Context must be " . AmqpContext::class);
 
-        return !$context->getLibChannel()->is_open();
+        return !$context->getExtChannel()->isConnected();
     }
 
     public function reconnect(): void
     {
         $connectionProperty = $this->getConnectionProperty();
 
-        /** @var AMQPConnection $connection */
+        /** @var \AMQPConnection $connection */
         $connection = $connectionProperty->getValue($this->connectionFactory);
         if ($connection) {
-            $connection->close();
+            $connection->disconnect();
         }
 
         $connectionProperty->setValue($this->connectionFactory, null);
@@ -69,7 +68,7 @@ class AmqpConsumerConnectionFactory implements ReconnectableConnectionFactory
     private function isConnected() : bool
     {
         $connectionProperty = $this->getConnectionProperty();
-        /** @var AMQPConnection $connection */
+        /** @var \AMQPConnection $connection */
         $connection = $connectionProperty->getValue($this->connectionFactory);
 
         return $connection ? $connection->isConnected() : false;

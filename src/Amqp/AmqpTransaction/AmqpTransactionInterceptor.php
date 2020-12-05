@@ -44,18 +44,20 @@ class AmqpTransactionInterceptor
         try {
             $this->isRunningTransaction = true;
             foreach ($connectionFactories as $connectionFactory) {
-                $connectionFactory->createContext()->getLibChannel()->tx_select();
+                $connectionFactory->createContext()->getExtChannel()->startTransaction();
             }
             try {
                 $result = $methodInvocation->proceed();
 
                 foreach ($connectionFactories as $connectionFactory) {
-                    $connectionFactory->createContext()->getLibChannel()->tx_commit();
+                    $connectionFactory->createContext()->getExtChannel()->commitTransaction();
                 }
             }catch (\Throwable $exception) {
                 foreach ($connectionFactories as $connectionFactory) {
-                    try{ $connectionFactory->createContext()->getLibChannel()->tx_rollback(); }catch(\Throwable $exception){}
-                    $connectionFactory->createContext()->close(); // need to be closed in order to publish other messages outside of transaction scope.
+                    /** @var \AMQPChannel $extChannel */
+                    $extChannel = $connectionFactory->createContext()->getExtChannel();
+                    try{$extChannel->rollbackTransaction(); }catch(\Throwable $exception){}
+                    $extChannel->close(); // Has to be closed in amqp_lib, as if channel is trarnsactional does not allow for sending outside of transaction
                 }
 
                 throw $exception;

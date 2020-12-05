@@ -6,7 +6,6 @@ use Ecotone\Messaging\Annotation\Asynchronous;
 use Ecotone\Messaging\Annotation\ServiceActivator;
 use Ecotone\Modelling\Annotation\CommandHandler;
 use Ecotone\Modelling\Annotation\QueryHandler;
-use Test\Ecotone\Amqp\Fixture\ErrorChannel\ErrorConfigurationContext;
 
 class OrderService
 {
@@ -14,8 +13,8 @@ class OrderService
 
     private int $incorrectOrders = 0;
 
-    #[CommandHandler("order.register", "orderService")]
     #[Asynchronous(ErrorConfigurationContext::INPUT_CHANNEL)]
+    #[CommandHandler("order.register", "orderService")]
     public function order(string $orderName) : void
     {
         throw new \InvalidArgumentException("exception");
