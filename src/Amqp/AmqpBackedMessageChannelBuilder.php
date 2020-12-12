@@ -4,7 +4,7 @@
 namespace Ecotone\Amqp;
 
 use Ecotone\Enqueue\EnqueueMessageChannelBuilder;
-use Ecotone\Messaging\Config\ApplicationConfiguration;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Config\InMemoryChannelResolver;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\PollingMetadata;

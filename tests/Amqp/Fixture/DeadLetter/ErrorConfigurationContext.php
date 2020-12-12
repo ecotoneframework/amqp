@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Messaging\Annotation\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
 use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
@@ -16,7 +16,7 @@ class ErrorConfigurationContext
     const DEAD_LETTER_CHANNEL = "incorrectOrders";
 
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function getChannels()
     {
         return [
@@ -27,7 +27,7 @@ class ErrorConfigurationContext
         ];
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function errorConfiguration()
     {
         return ErrorHandlerConfiguration::createWithDeadLetterChannel(
@@ -38,7 +38,7 @@ class ErrorConfigurationContext
         );
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function pollingConfiguration()
     {
         return [

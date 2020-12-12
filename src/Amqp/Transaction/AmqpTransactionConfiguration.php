@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Ecotone\Amqp\AmqpTransaction;
+namespace Ecotone\Amqp\Transaction;
 
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;

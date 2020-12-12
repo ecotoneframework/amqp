@@ -60,3 +60,42 @@ Feature: activating as aggregate order entity
     And I call consumer "incorrectOrdersEndpoint"
     Then there should be 0 orders
     Then there should be 1 incorrect orders
+
+  Scenario: Distributing command to another service
+    Given I active messaging distributed services:
+      | name            | namespace |
+      | user_service    | Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Publisher |
+      | ticket_service  | Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver  |
+    When using "ticket_service" I should have 0 remaining ticket
+    And using "user_service" I change billing details
+    Then using "ticket_service" I should have 1 remaining ticket
+
+  Scenario: Distributing event to another service
+    Given I active messaging distributed services:
+      | name            | namespace |
+      | user_service    | Test\Ecotone\Amqp\Fixture\DistributedEventBus\Publisher |
+      | ticket_service  | Test\Ecotone\Amqp\Fixture\DistributedEventBus\Receiver  |
+    When using "ticket_service" I should have 0 remaining ticket
+    And using "user_service" I change billing details
+    Then using "ticket_service" I should have 1 remaining ticket
+
+    Scenario: Distributing command to another service
+    Given I active messaging distributed services:
+      | name            | namespace |
+      | user_service    | Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Publisher |
+      | ticket_service  | Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver  |
+    When using "ticket_service" I should have 0 remaining ticket
+    And using "user_service" I change billing details
+    Then using "ticket_service" I should have 1 remaining ticket
+
+  Scenario: Application exception handling with retry dead letter when using distribution
+    Given I active messaging distributed services:
+      | name            | namespace |
+      | user_service    | Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher |
+      | ticket_service  | Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver  |
+    When using "ticket_service" there are 0 error tickets
+    And using "user_service" I change billing details
+    And using "ticket_service" process ticket with failure
+    Then using "ticket_service" there are 0 error tickets
+    Then using "ticket_service" process ticket with failure
+    Then using "ticket_service" there are 1 error tickets

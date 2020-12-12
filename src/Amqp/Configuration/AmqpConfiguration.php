@@ -16,6 +16,7 @@ class AmqpConfiguration
     private bool $transactionOnCommandBus = self::DEFAULT_TRANSACTION_ON_COMMAND_BUS;
     private bool $transactionOnConsoleCommands = self::DEFAULT_TRANSACTION_ON_CONSOLE_COMMANDS;
 
+
     private array $defaultConnectionReferenceNames = [];
 
     private function __construct()

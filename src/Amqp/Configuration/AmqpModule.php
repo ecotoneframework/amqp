@@ -8,6 +8,7 @@ use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpBinding;
 use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Amqp\Distribution\AmqpDistributionModule;
 use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
@@ -17,8 +18,11 @@ use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 #[ModuleAnnotation]
 class AmqpModule implements AnnotationModule
 {
-    private function __construct()
+    private AmqpDistributionModule $amqpDistributionModule;
+
+    private function __construct(AmqpDistributionModule $amqpDistributionModule)
     {
+        $this->amqpDistributionModule = $amqpDistributionModule;
     }
 
     /**
@@ -26,7 +30,7 @@ class AmqpModule implements AnnotationModule
      */
     public static function create(AnnotationFinder $annotationRegistrationService): static
     {
-        return new self();
+        return new self(AmqpDistributionModule::create($annotationRegistrationService));
     }
 
     /**
@@ -34,6 +38,8 @@ class AmqpModule implements AnnotationModule
      */
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
+        $extensionObjects = array_merge($this->amqpDistributionModule->getAmqpConfiguration($extensionObjects), $extensionObjects);
+
         $amqpExchanges = [];
         $amqpQueues = [];
         $amqpBindings = [];
@@ -50,6 +56,7 @@ class AmqpModule implements AnnotationModule
             }
         }
 
+        $this->amqpDistributionModule->prepare($configuration, $extensionObjects);
         $moduleReferenceSearchService->store(AmqpAdmin::REFERENCE_NAME, AmqpAdmin::createWith(
             $amqpExchanges, $amqpQueues, $amqpBindings
         ));
@@ -64,7 +71,8 @@ class AmqpModule implements AnnotationModule
             $extensionObject instanceof AmqpBackedMessageChannelBuilder
             || $extensionObject instanceof AmqpExchange
             || $extensionObject instanceof AmqpQueue
-            || $extensionObject instanceof AmqpBinding;
+            || $extensionObject instanceof AmqpBinding
+            || $this->amqpDistributionModule->canHandle($extensionObject);
     }
 
     /**

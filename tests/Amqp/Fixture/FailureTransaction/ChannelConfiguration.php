@@ -5,14 +5,14 @@ namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Messaging\Annotation\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class ChannelConfiguration
 {
     const QUEUE_NAME = "placeOrder";
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function registerCommandChannel(): array
     {
         return [

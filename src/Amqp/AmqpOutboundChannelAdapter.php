@@ -105,7 +105,6 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $messageToSend
             ->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-
         $this->connectionFactory->getProducer()
             ->setTimeToLive($outboundMessage->getTimeToLive())
             ->setDelayStrategy(new HeadersExchangeDelayStrategy())

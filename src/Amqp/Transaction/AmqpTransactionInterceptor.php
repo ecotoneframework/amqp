@@ -1,15 +1,13 @@
 <?php
 
 
-namespace Ecotone\Amqp\AmqpTransaction;
+namespace Ecotone\Amqp\Transaction;
 
-use Ecotone\Amqp\AmqpConsumerConnectionFactory;
 use Ecotone\Amqp\AmqpPublisherConnectionFactory;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\MethodInvocation;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Enqueue\AmqpLib\AmqpContext;
-use Interop\Queue\ConnectionFactory;
 
 /**
  * https://www.rabbitmq.com/blog/2011/02/10/introducing-publisher-confirms/
@@ -56,7 +54,7 @@ class AmqpTransactionInterceptor
                 foreach ($connectionFactories as $connectionFactory) {
                     /** @var \AMQPChannel $extChannel */
                     $extChannel = $connectionFactory->createContext()->getExtChannel();
-                    try{$extChannel->rollbackTransaction(); }catch(\Throwable $exception){}
+                    try{$extChannel->rollbackTransaction();}catch(\Throwable){}
                     $extChannel->close(); // Has to be closed in amqp_lib, as if channel is trarnsactional does not allow for sending outside of transaction
                 }
 

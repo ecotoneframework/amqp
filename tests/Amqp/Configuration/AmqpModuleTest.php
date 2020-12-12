@@ -12,7 +12,7 @@ use Ecotone\Amqp\Configuration\AmqpModule;
 use Ecotone\AnnotationFinder\InMemory\InMemoryAnnotationFinder;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
 use Ecotone\Messaging\Config\Annotation\InMemoryAnnotationRegistrationService;
-use Ecotone\Messaging\Config\ApplicationConfiguration;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
@@ -54,7 +54,7 @@ class AmqpModuleTest extends AmqpMessagingTest
         $messagingSystem    = MessagingSystemConfiguration::prepareWithDefaults(
             InMemoryModuleMessaging::createWith(
                 [AmqpModule::create(InMemoryAnnotationFinder::createEmpty())], [
-                    ApplicationConfiguration::createWithDefaults()
+                    ServiceConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON),
                     $amqpChannelBuilder
                 ]

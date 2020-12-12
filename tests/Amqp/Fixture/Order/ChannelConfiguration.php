@@ -4,14 +4,14 @@
 namespace Test\Ecotone\Amqp\Fixture\Order;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Messaging\Annotation\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class ChannelConfiguration
 {
     const QUEUE_NAME = "orders";
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function registerAsyncChannel() : array
     {
         return [

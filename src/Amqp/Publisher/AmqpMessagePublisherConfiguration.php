@@ -1,10 +1,9 @@
 <?php
 
 
-namespace Ecotone\Amqp\Configuration;
+namespace Ecotone\Amqp\Publisher;
 
 use Enqueue\AmqpExt\AmqpConnectionFactory;
-use Exception;
 
 /**
  * Class RegisterAmqpPublisher

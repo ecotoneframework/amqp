@@ -5,7 +5,7 @@ namespace Test\Ecotone\Amqp\Fixture\ErrorChannel;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Messaging\Annotation\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
 use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
@@ -16,7 +16,7 @@ class ErrorConfigurationContext
     const ERROR_CHANNEL = "errorChannel";
 
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function getChannels()
     {
         return [
@@ -25,7 +25,7 @@ class ErrorConfigurationContext
         ];
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function errorConfiguration()
     {
         return ErrorHandlerConfiguration::create(
@@ -35,7 +35,7 @@ class ErrorConfigurationContext
         );
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function pollingConfiguration()
     {
         return [
@@ -46,7 +46,7 @@ class ErrorConfigurationContext
         ];
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function registerAmqpConfig(): array
     {
         return [

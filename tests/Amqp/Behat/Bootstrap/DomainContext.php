@@ -2,18 +2,22 @@
 
 namespace Test\Ecotone\Amqp\Behat\Bootstrap;
 
+use Behat\Gherkin\Node\TableNode;
 use Behat\Behat\Tester\Exception\PendingException;
 use Behat\Behat\Context\Context;
 use Doctrine\Common\Annotations\AnnotationException;
+use Ecotone\Amqp\Distribution\AmqpDistributionModule;
+use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
 use Ecotone\Lite\EcotoneLiteConfiguration;
 use Ecotone\Lite\InMemoryPSRContainer;
-use Ecotone\Messaging\Config\ApplicationConfiguration;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Ecotone\Modelling\CommandBus;
+use Ecotone\Modelling\DistributedBus;
 use Ecotone\Modelling\QueryBus;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Interop\Amqp\Impl\AmqpQueue;
@@ -21,12 +25,17 @@ use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
 use ReflectionException;
+use Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Publisher\UserService;
+use Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver\TicketServiceMessagingConfiguration;
+use Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver\TicketServiceReceiver;
 use Test\Ecotone\Amqp\Fixture\ErrorChannel\ErrorConfigurationContext;
 use Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError\ChannelConfiguration;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
 use Test\Ecotone\Amqp\Fixture\Order\PlaceOrder;
 use Test\Ecotone\Amqp\Fixture\Shop\MessagingConfiguration;
 use Test\Ecotone\Amqp\Fixture\Shop\ShoppingCart;
+use Test\Ecotone\Modelling\Fixture\DistributedCommandHandler\ShoppingCenter;
+use Test\Ecotone\Modelling\Fixture\DistributedEventHandler\ShoppingRecord;
 use Test\Ecotone\Modelling\Fixture\OrderAggregate\OrderErrorHandler;
 
 /**
@@ -34,19 +43,14 @@ use Test\Ecotone\Modelling\Fixture\OrderAggregate\OrderErrorHandler;
  */
 class DomainContext extends TestCase implements Context
 {
+    private static ConfiguredMessagingSystem $messagingSystem;
     /**
-     * @var ConfiguredMessagingSystem
+     * @var ConfiguredMessagingSystem[] $messagingSystems
      */
-    private static $messagingSystem;
+    private static array $messagingSystems = [];
 
     /**
      * @Given I active messaging for namespace :namespace
-     * @param string $namespace
-     * @throws AnnotationException
-     * @throws ConfigurationException
-     * @throws MessagingException
-     * @throws InvalidArgumentException
-     * @throws ReflectionException
      */
     public function iActiveMessagingForNamespace(string $namespace)
     {
@@ -109,7 +113,7 @@ class DomainContext extends TestCase implements Context
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
             __DIR__ . "/../../../../",
             InMemoryPSRContainer::createFromObjects(array_merge($objects, [$amqpConnectionFactory])),
-            ApplicationConfiguration::createWithDefaults()
+            ServiceConfiguration::createWithDefaults()
                 ->withNamespaces([$namespace])
                 ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
         );
@@ -122,6 +126,78 @@ class DomainContext extends TestCase implements Context
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ErrorConfigurationContext::INPUT_CHANNEL));
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\DeadLetter\ErrorConfigurationContext::INPUT_CHANNEL));
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(\Test\Ecotone\Amqp\Fixture\DeadLetter\ErrorConfigurationContext::DEAD_LETTER_CHANNEL));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(TicketServiceMessagingConfiguration::SERVICE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(AmqpDistributionModule::CHANNEL_PREFIX . \Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceMessagingConfiguration::SERVICE_NAME));
+        $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue("ecotone_1_delay"));
+    }
+
+    /**
+     * @Given I active messaging distributed services:
+     */
+    public function iActiveMessagingDistributedServices(TableNode $table)
+    {
+        $services = $table->getHash();
+
+        foreach ($services as $service) {
+            $namespace = $service["namespace"];
+            $serviceName                          = $service["name"];
+            $host = getenv("RABBIT_HOST") ? getenv("RABBIT_HOST") : "localhost";
+
+            switch ($namespace) {
+                case "Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Publisher":
+                    {
+                    $objects = [
+                        new UserService()
+                    ];
+                    break;
+                }
+                case "Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver":
+                    {
+                    $objects = [
+                        new TicketServiceReceiver()
+                    ];
+                    break;
+                }
+                case "Test\Ecotone\Amqp\Fixture\DistributedEventBus\Publisher":
+                    {
+                        $objects = [
+                            new \Test\Ecotone\Amqp\Fixture\DistributedEventBus\Publisher\UserService()
+                        ];
+                        break;
+                    }
+                case "Test\Ecotone\Amqp\Fixture\DistributedEventBus\Receiver":
+                    {
+                        $objects = [
+                            new \Test\Ecotone\Amqp\Fixture\DistributedEventBus\Receiver\TicketServiceReceiver()
+                        ];
+                        break;
+                    }
+                case "Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher":
+                    {
+                        $objects = [
+                            new \Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher\UserService()
+                        ];
+                        break;
+                    }
+                case "Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver":
+                    {
+                        $objects = [
+                            new \Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceReceiver()
+                        ];
+                        break;
+                    }
+            }
+
+            $amqpConnectionFactory         = new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"]);
+            self::$messagingSystems[$serviceName] = EcotoneLiteConfiguration::createWithConfiguration(
+                __DIR__ . "/../../../../",
+                InMemoryPSRContainer::createFromObjects(array_merge($objects, [$amqpConnectionFactory])),
+                ServiceConfiguration::createWithDefaults()
+                    ->withNamespaces([$namespace])
+                    ->withServiceName($serviceName)
+                    ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
+            );
+        }
     }
 
     /**
@@ -143,7 +219,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iActiveReceiver(string $receiverName)
     {
-        self::$messagingSystem->runSeparatelyRunningEndpointBy($receiverName);
+        self::$messagingSystem->runAsynchronouslyRunningEndpoint($receiverName);
     }
 
     /**
@@ -260,6 +336,48 @@ class DomainContext extends TestCase implements Context
      */
     public function iCallConsumer(string $consumerName)
     {
-        self::$messagingSystem->runSeparatelyRunningEndpointBy($consumerName);
+        self::$messagingSystem->runAsynchronouslyRunningEndpoint($consumerName);
+    }
+
+    /**
+     * @When using :serviceName I change billing details
+     */
+    public function usingIChangeBillingDetails(string $serviceName)
+    {
+        /** @var CommandBus $commandBus */
+        $commandBus = self::$messagingSystems[$serviceName]->getGatewayByName(CommandBus::class);
+
+        $commandBus->sendWithRouting(UserService::CHANGE_BILLING_DETAILS, $serviceName);
+    }
+
+    /**
+     * @Then using :serviceName I should have :amount remaining ticket
+     */
+    public function usingIShouldHaveRemainingTicket(string $serviceName, int $amount)
+    {
+        self::$messagingSystems[$serviceName]->runAsynchronouslyRunningEndpoint($serviceName);
+        /** @var QueryBus $queryBus */
+        $queryBus = self::$messagingSystems[$serviceName]->getGatewayByName(QueryBus::class);
+
+        $this->assertEquals($amount, $queryBus->sendWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT, []));
+    }
+
+    /**
+     * @When using :serviceName there are :amount error tickets
+     */
+    public function usingThereAreErrorTickets(string $serviceName, int $amount)
+    {
+        /** @var QueryBus $queryBus */
+        $queryBus = self::$messagingSystems[$serviceName]->getGatewayByName(QueryBus::class);
+
+        $this->assertEquals($amount, $queryBus->sendWithRouting(\Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceReceiver::GET_ERROR_TICKETS_COUNT, []));
+    }
+
+    /**
+     * @When using :serviceName process ticket with failure
+     */
+    public function usingProcessTicketWithFailure(string $serviceName)
+    {
+        self::$messagingSystems[$serviceName]->runAsynchronouslyRunningEndpoint($serviceName);
     }
 }

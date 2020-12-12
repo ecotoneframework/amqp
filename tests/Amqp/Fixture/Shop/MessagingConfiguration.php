@@ -5,8 +5,8 @@ namespace Test\Ecotone\Amqp\Fixture\Shop;
 
 use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
-use Ecotone\Amqp\Configuration\AmqpMessagePublisherConfiguration;
-use Ecotone\Messaging\Annotation\ApplicationContext;
+use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
+use Ecotone\Messaging\Annotation\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\MessagePublisher;
 
@@ -15,7 +15,7 @@ class MessagingConfiguration
     const CONSUMER_ID    = "addToCart";
     const SHOPPING_QUEUE = "shopping";
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function registerPublisher()
     {
         return AmqpMessagePublisherConfiguration::create(MessagePublisher::class)
@@ -23,7 +23,7 @@ class MessagingConfiguration
             ->withDefaultRoutingKey(self::SHOPPING_QUEUE);
     }
 
-    #[ApplicationContext]
+    #[ServiceContext]
     public function registerConsumer()
     {
         return [

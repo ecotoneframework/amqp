@@ -19,40 +19,14 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
 {
     private const DEFAULT_PERSISTENT_MODE = true;
 
-    /**
-     * @var string
-     */
-    private $amqpConnectionFactoryReferenceName;
-    /**
-     * @var string
-     */
-    private $defaultRoutingKey = "";
-    /**
-     * @var string
-     */
-    private $routingKeyFromHeader;
-    /**
-     * @var string
-     */
-    private $exchangeFromHeader;
-    /**
-     * @var string
-     */
-    private $exchangeName;
-    /**
-     * @var bool
-     */
-    private $defaultPersistentDelivery = self::DEFAULT_PERSISTENT_MODE;
+    private string $amqpConnectionFactoryReferenceName;
+    private string $defaultRoutingKey = "";
+    private ?string $routingKeyFromHeader = null;
+    private ?string $exchangeFromHeader = null;
+    private string $exchangeName;
+    private bool $defaultPersistentDelivery = self::DEFAULT_PERSISTENT_MODE;
+    private array $staticHeadersToAdd = [];
 
-    /**
-     * OutboundAmqpGatewayBuilder constructor.
-     *
-     * @param string $exchangeName
-     * @param string $amqpConnectionFactoryReferenceName
-     *
-     * @throws MessagingException
-     * @throws InvalidArgumentException
-     */
     private function __construct(string $exchangeName, string $amqpConnectionFactoryReferenceName)
     {
         $this->amqpConnectionFactoryReferenceName = $amqpConnectionFactoryReferenceName;
@@ -60,26 +34,11 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
         $this->initialize($amqpConnectionFactoryReferenceName);
     }
 
-    /**
-     * @param string $exchangeName
-     * @param string $amqpConnectionFactoryReferenceName
-     *
-     * @return AmqpOutboundChannelAdapterBuilder
-     * @throws MessagingException
-     * @throws InvalidArgumentException
-     */
     public static function create(string $exchangeName, string $amqpConnectionFactoryReferenceName): self
     {
         return new self($exchangeName, $amqpConnectionFactoryReferenceName);
     }
 
-    /**
-     * @param string $amqpConnectionFactoryReferenceName
-     *
-     * @return AmqpOutboundChannelAdapterBuilder
-     * @throws MessagingException
-     * @throws InvalidArgumentException
-     */
     public static function createForDefaultExchange(string $amqpConnectionFactoryReferenceName): self
     {
         return new self("", $amqpConnectionFactoryReferenceName);
@@ -105,6 +64,13 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
     public function withRoutingKeyFromHeader(string $headerName): self
     {
         $this->routingKeyFromHeader = $headerName;
+
+        return $this;
+    }
+
+    public function withStaticHeadersToEnrich(array $headers) : self
+    {
+        $this->staticHeadersToAdd = $headers;
 
         return $this;
     }
@@ -152,7 +118,7 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
             $this->exchangeFromHeader,
             $this->defaultPersistentDelivery,
             $this->autoDeclare,
-            new OutboundMessageConverter(DefaultHeaderMapper::createWith([], $this->headerMapper, $conversionService), $conversionService, $this->defaultConversionMediaType, $this->defaultDeliveryDelay, $this->defaultTimeToLive, $this->defaultPriority)
+            new OutboundMessageConverter(DefaultHeaderMapper::createWith([], $this->headerMapper, $conversionService), $conversionService, $this->defaultConversionMediaType, $this->defaultDeliveryDelay, $this->defaultTimeToLive, $this->defaultPriority, $this->staticHeadersToAdd)
         );
     }
 }

@@ -1,17 +1,17 @@
 <?php
 
 
-namespace Ecotone\Amqp\Configuration;
+namespace Ecotone\Amqp\Publisher;
 
 use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
 use Ecotone\AnnotationFinder\AnnotationFinder;
 use Ecotone\Messaging\Annotation\ModuleAnnotation;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
-use Ecotone\Messaging\Config\ApplicationConfiguration;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\Gateway\GatewayProxyBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderBuilder;
@@ -38,10 +38,10 @@ class AmqpPublisherModule implements AnnotationModule
     public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
     {
         $registeredReferences = [];
-        /** @var ApplicationConfiguration $applicationConfiguration */
+        /** @var ServiceConfiguration $applicationConfiguration */
         $applicationConfiguration = null;
         foreach ($extensionObjects as $extensionObject) {
-            if ($extensionObject instanceof ApplicationConfiguration) {
+            if ($extensionObject instanceof ServiceConfiguration) {
                 $applicationConfiguration = $extensionObject;
                 break;
             }
@@ -50,7 +50,7 @@ class AmqpPublisherModule implements AnnotationModule
         /** @var AmqpMessagePublisherConfiguration $amqpPublisher */
         foreach ($extensionObjects as $amqpPublisher) {
             if (!($amqpPublisher instanceof AmqpMessagePublisherConfiguration)) {
-                return;
+                continue;
             }
 
             if (in_array($amqpPublisher->getReferenceName(), $registeredReferences)) {
@@ -95,7 +95,6 @@ class AmqpPublisherModule implements AnnotationModule
                     AmqpOutboundChannelAdapterBuilder::create($amqpPublisher->getExchangeName(), $amqpPublisher->getAmqpConnectionReference())
                         ->withEndpointId($amqpPublisher->getReferenceName() . ".handler")
                         ->withInputChannelName($amqpPublisher->getReferenceName())
-                        ->withRoutingKeyFromHeader("amqpRouting")
                         ->withDefaultPersistentMode($amqpPublisher->getDefaultPersistentDelivery())
                         ->withAutoDeclareOnSend($amqpPublisher->isAutoDeclareQueueOnSend())
                         ->withHeaderMapper($amqpPublisher->getHeaderMapper())
@@ -114,7 +113,7 @@ class AmqpPublisherModule implements AnnotationModule
     {
         return
             $extensionObject instanceof AmqpMessagePublisherConfiguration
-            || $extensionObject instanceof ApplicationConfiguration;
+            || $extensionObject instanceof ServiceConfiguration;
     }
 
     /**

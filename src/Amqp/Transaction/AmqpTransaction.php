@@ -1,6 +1,6 @@
 <?php
 
-namespace Ecotone\Amqp\AmqpTransaction;
+namespace Ecotone\Amqp\Transaction;
 
 use Enqueue\AmqpExt\AmqpConnectionFactory;
 
