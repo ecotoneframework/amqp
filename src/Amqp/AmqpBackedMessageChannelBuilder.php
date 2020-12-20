@@ -23,24 +23,12 @@ use Enqueue\AmqpExt\AmqpConnectionFactory;
 class AmqpBackedMessageChannelBuilder extends EnqueueMessageChannelBuilder
 {
     private AmqpInboundChannelAdapterBuilder $inboundChannelAdapter;
-    private string $amqpConnectionReferenceName;
     private AmqpOutboundChannelAdapterBuilder $outboundChannelAdapter;
 
-    /**
-     * AmqpBackedMessageChannelBuilder constructor.
-     *
-     * @param string $channelName
-     * @param string $amqpConnectionReferenceName
-     *
-     * @throws InvalidArgumentException
-     * @throws MessagingException
-     */
     private function __construct(string $channelName, string $amqpConnectionReferenceName)
     {
-        $this->amqpConnectionReferenceName = $amqpConnectionReferenceName;
-
         $this->inboundChannelAdapter = AmqpInboundChannelAdapterBuilder::createWithoutAck($channelName, $channelName, null, $amqpConnectionReferenceName);
-        $this->outboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($this->amqpConnectionReferenceName)
+        $this->outboundChannelAdapter = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
             ->withDefaultRoutingKey($channelName)
             ->withAutoDeclareOnSend(true)
             ->withDefaultPersistentMode(true);

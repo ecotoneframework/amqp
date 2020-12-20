@@ -14,22 +14,10 @@ class AmqpQueue
 {
     private const DEFAULT_DURABILITY = true;
 
-    /**
-     * @var EnqueueQueue
-     */
-    private $enqueueQueue;
-    /**
-     * @var bool
-     */
-    private $withDurability = self::DEFAULT_DURABILITY;
-    /**
-     * @var string|null
-     */
-    private $withDeadLetterExchange = null;
-    /**
-     * @var string|null
-     */
-    private $withDeadLetterRoutingKey = null;
+    private EnqueueQueue $enqueueQueue;
+    private bool $withDurability = self::DEFAULT_DURABILITY;
+    private ?string $withDeadLetterExchange = null;
+    private ?string $withDeadLetterRoutingKey = null;
 
     /**
      * AmqpQueue constructor.

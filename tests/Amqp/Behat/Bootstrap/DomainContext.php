@@ -115,7 +115,8 @@ class DomainContext extends TestCase implements Context
             InMemoryPSRContainer::createFromObjects(array_merge($objects, [$amqpConnectionFactory])),
             ServiceConfiguration::createWithDefaults()
                 ->withNamespaces([$namespace])
-                ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
+                ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString()),
+            []
         );
 
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ChannelConfiguration::QUEUE_NAME));
@@ -195,7 +196,8 @@ class DomainContext extends TestCase implements Context
                 ServiceConfiguration::createWithDefaults()
                     ->withNamespaces([$namespace])
                     ->withServiceName($serviceName)
-                    ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString())
+                    ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString()),
+                []
             );
         }
     }
