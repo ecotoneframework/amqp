@@ -10,7 +10,7 @@ use Ecotone\Amqp\AmqpExchange;
 use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Distribution\AmqpDistributionModule;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Messaging\Annotation\ModuleAnnotation;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
@@ -73,6 +73,11 @@ class AmqpModule implements AnnotationModule
             || $extensionObject instanceof AmqpQueue
             || $extensionObject instanceof AmqpBinding
             || $this->amqpDistributionModule->canHandle($extensionObject);
+    }
+
+    public function getModuleExtensions(array $serviceExtensions): array
+    {
+        return [];
     }
 
     /**

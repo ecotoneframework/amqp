@@ -6,12 +6,13 @@ namespace Ecotone\Amqp\Transaction;
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Messaging\Annotation\AsynchronousRunningEndpoint;
-use Ecotone\Messaging\Annotation\ConsoleCommand;
-use Ecotone\Messaging\Annotation\ModuleAnnotation;
+use Ecotone\Messaging\Attribute\AsynchronousRunningEndpoint;
+use Ecotone\Messaging\Attribute\ConsoleCommand;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Gateway\ConsoleCommandRunner;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorReference;
 use Ecotone\Messaging\Precedence;
 use Ecotone\Modelling\CommandBus;
@@ -69,6 +70,11 @@ class AmqpTransactionConfiguration implements AnnotationModule
                     []
                 )
             );
+    }
+
+    public function getModuleExtensions(array $serviceExtensions): array
+    {
+        return [];
     }
 
     /**

@@ -2,10 +2,10 @@
 
 namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
-use Ecotone\Messaging\Annotation\Asynchronous;
-use Ecotone\Messaging\Annotation\ServiceActivator;
-use Ecotone\Modelling\Annotation\CommandHandler;
-use Ecotone\Modelling\Annotation\QueryHandler;
+use Ecotone\Messaging\Attribute\Asynchronous;
+use Ecotone\Messaging\Attribute\ServiceActivator;
+use Ecotone\Modelling\Attribute\CommandHandler;
+use Ecotone\Modelling\Attribute\QueryHandler;
 
 class OrderService
 {

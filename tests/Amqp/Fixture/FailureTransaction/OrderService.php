@@ -3,14 +3,14 @@
 
 namespace Test\Ecotone\Amqp\Fixture\FailureTransaction;
 
-use Ecotone\Messaging\Annotation\ServiceActivator;
+use Ecotone\Messaging\Attribute\ServiceActivator;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\MessagingException;
-use Ecotone\Modelling\Annotation\CommandHandler;
+use Ecotone\Modelling\Attribute\CommandHandler;
 use Ecotone\Modelling\CommandBus;
 use InvalidArgumentException;
-use Ecotone\Modelling\Annotation\QueryHandler;
-use Ecotone\Messaging\Annotation\Asynchronous;
+use Ecotone\Modelling\Attribute\QueryHandler;
+use Ecotone\Messaging\Attribute\Asynchronous;
 
 class OrderService
 {

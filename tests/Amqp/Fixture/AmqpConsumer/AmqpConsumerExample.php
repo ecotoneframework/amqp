@@ -3,9 +3,9 @@
 
 namespace Test\Ecotone\Amqp\Fixture\AmqpConsumer;
 
-use Ecotone\Messaging\Annotation\ClassReference;
-use Ecotone\Messaging\Annotation\MessageConsumer;
-use Ecotone\Messaging\Annotation\Parameter\Payload;
+use Ecotone\Messaging\Attribute\ClassReference;
+use Ecotone\Messaging\Attribute\MessageConsumer;
+use Ecotone\Messaging\Attribute\Parameter\Payload;
 use stdClass;
 
 #[ClassReference("amqpConsumer")]

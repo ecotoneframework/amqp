@@ -3,7 +3,7 @@
 namespace Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver;
 
 use Ecotone\Amqp\Distribution\AmqpDistributedBusConfiguration;
-use Ecotone\Messaging\Annotation\ServiceContext;
+use Ecotone\Messaging\Attribute\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class TicketServiceMessagingConfiguration

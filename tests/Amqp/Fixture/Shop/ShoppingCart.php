@@ -3,10 +3,10 @@
 
 namespace Test\Ecotone\Amqp\Fixture\Shop;
 
-use Ecotone\Messaging\Annotation\MessageConsumer;
+use Ecotone\Messaging\Attribute\MessageConsumer;
 use Ecotone\Messaging\MessagePublisher;
-use Ecotone\Modelling\Annotation\CommandHandler;
-use Ecotone\Modelling\Annotation\QueryHandler;
+use Ecotone\Modelling\Attribute\CommandHandler;
+use Ecotone\Modelling\Attribute\QueryHandler;
 
 class ShoppingCart
 {

@@ -5,8 +5,8 @@ namespace Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Messaging\Annotation\ServiceContext;
-use Ecotone\Messaging\Annotation\Extension;
+use Ecotone\Messaging\Attribute\ServiceContext;
+use Ecotone\Messaging\Attribute\Extension;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class ChannelConfiguration

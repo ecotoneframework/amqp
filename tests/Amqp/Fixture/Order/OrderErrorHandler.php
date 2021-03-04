@@ -2,7 +2,7 @@
 
 namespace Test\Ecotone\Modelling\Fixture\OrderAggregate;
 
-use Ecotone\Messaging\Annotation\ServiceActivator;
+use Ecotone\Messaging\Attribute\ServiceActivator;
 use Ecotone\Messaging\MessagingException;
 
 class OrderErrorHandler

@@ -5,7 +5,7 @@ namespace Ecotone\Amqp\Publisher;
 
 use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Messaging\Annotation\ModuleAnnotation;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Configuration;
@@ -114,6 +114,11 @@ class AmqpPublisherModule implements AnnotationModule
         return
             $extensionObject instanceof AmqpMessagePublisherConfiguration
             || $extensionObject instanceof ServiceConfiguration;
+    }
+
+    public function getModuleExtensions(array $serviceExtensions): array
+    {
+        return [];
     }
 
     /**

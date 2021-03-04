@@ -3,7 +3,7 @@
 namespace Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver;
 
 use Ecotone\Amqp\Distribution\AmqpDistributedBusConfiguration;
-use Ecotone\Messaging\Annotation\ServiceContext;
+use Ecotone\Messaging\Attribute\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
 use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;

@@ -3,7 +3,7 @@
 
 namespace Test\Ecotone\Amqp\Fixture\SuccessTransaction;
 
-use Ecotone\Messaging\Annotation\MessageGateway;
+use Ecotone\Messaging\Attribute\MessageGateway;
 
 interface OrderRegisteringGateway
 {

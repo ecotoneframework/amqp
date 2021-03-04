@@ -4,7 +4,7 @@
 namespace Test\Ecotone\Amqp\Fixture\Order;
 
 use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Messaging\Annotation\ServiceContext;
+use Ecotone\Messaging\Attribute\ServiceContext;
 use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 class ChannelConfiguration

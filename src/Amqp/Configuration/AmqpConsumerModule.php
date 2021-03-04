@@ -5,8 +5,8 @@ namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpInboundChannelAdapterBuilder;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Messaging\Annotation\MessageConsumer;
-use Ecotone\Messaging\Annotation\ModuleAnnotation;
+use Ecotone\Messaging\Attribute\MessageConsumer;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotatedDefinitionReference;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\AnnotationRegistrationService;
@@ -70,6 +70,11 @@ class AmqpConsumerModule implements AnnotationModule
         return new self($amqpInboundChannelAdapters, $serviceActivators);
     }
 
+    public function getModuleExtensions(array $serviceExtensions): array
+    {
+        return [];
+    }
+
     /**
      * @inheritDoc
      */
@@ -95,6 +100,8 @@ class AmqpConsumerModule implements AnnotationModule
             $configuration->registerMessageHandler($this->serviceActivators[$extensionObject->getEndpointId()]);
         }
     }
+
+
 
     /**
      * @inheritDoc
