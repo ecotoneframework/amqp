@@ -221,7 +221,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iActiveReceiver(string $receiverName)
     {
-        self::$messagingSystem->runAsynchronouslyRunningEndpoint($receiverName);
+        self::$messagingSystem->run($receiverName);
     }
 
     /**
@@ -338,7 +338,7 @@ class DomainContext extends TestCase implements Context
      */
     public function iCallConsumer(string $consumerName)
     {
-        self::$messagingSystem->runAsynchronouslyRunningEndpoint($consumerName);
+        self::$messagingSystem->run($consumerName);
     }
 
     /**
@@ -357,7 +357,7 @@ class DomainContext extends TestCase implements Context
      */
     public function usingIShouldHaveRemainingTicket(string $serviceName, int $amount)
     {
-        self::$messagingSystems[$serviceName]->runAsynchronouslyRunningEndpoint($serviceName);
+        self::$messagingSystems[$serviceName]->run($serviceName);
         /** @var QueryBus $queryBus */
         $queryBus = self::$messagingSystems[$serviceName]->getGatewayByName(QueryBus::class);
 
@@ -380,6 +380,6 @@ class DomainContext extends TestCase implements Context
      */
     public function usingProcessTicketWithFailure(string $serviceName)
     {
-        self::$messagingSystems[$serviceName]->runAsynchronouslyRunningEndpoint($serviceName);
+        self::$messagingSystems[$serviceName]->run($serviceName);
     }
 }
