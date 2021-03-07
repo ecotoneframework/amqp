@@ -116,7 +116,8 @@ class DomainContext extends TestCase implements Context
             ServiceConfiguration::createWithDefaults()
                 ->withNamespaces([$namespace])
                 ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString()),
-            []
+            [],
+            false
         );
 
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ChannelConfiguration::QUEUE_NAME));
@@ -197,7 +198,8 @@ class DomainContext extends TestCase implements Context
                     ->withNamespaces([$namespace])
                     ->withServiceName($serviceName)
                     ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString()),
-                []
+                [],
+                false
             );
         }
     }
