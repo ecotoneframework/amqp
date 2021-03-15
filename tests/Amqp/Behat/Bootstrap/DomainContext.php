@@ -10,6 +10,7 @@ use Ecotone\Amqp\Distribution\AmqpDistributionModule;
 use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
 use Ecotone\Lite\EcotoneLiteConfiguration;
 use Ecotone\Lite\InMemoryPSRContainer;
+use Ecotone\Messaging\Config\MessagingSystemConfiguration;
 use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
@@ -110,14 +111,16 @@ class DomainContext extends TestCase implements Context
         }
 
         $amqpConnectionFactory = new AmqpConnectionFactory(["dsn" => "amqp://{$host}:5672"]);
+        $serviceConfiguration = ServiceConfiguration::createWithDefaults()
+            ->withNamespaces([$namespace])
+            ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString());
+        MessagingSystemConfiguration::cleanCache($serviceConfiguration->getCacheDirectoryPath());
         self::$messagingSystem = EcotoneLiteConfiguration::createWithConfiguration(
             __DIR__ . "/../../../../",
             InMemoryPSRContainer::createFromObjects(array_merge($objects, [$amqpConnectionFactory])),
-            ServiceConfiguration::createWithDefaults()
-                ->withNamespaces([$namespace])
-                ->withCacheDirectoryPath(sys_get_temp_dir() . DIRECTORY_SEPARATOR . Uuid::uuid4()->toString()),
+            $serviceConfiguration,
             [],
-            false
+            true
         );
 
         $amqpConnectionFactory->createContext()->deleteQueue(new AmqpQueue(ChannelConfiguration::QUEUE_NAME));
