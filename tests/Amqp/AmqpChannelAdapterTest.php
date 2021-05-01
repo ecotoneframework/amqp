@@ -28,11 +28,13 @@ use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageChannel;
 use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagingException;
+use Ecotone\Messaging\NullableMessageChannel;
 use Ecotone\Messaging\Support\InvalidArgumentException;
 use Ecotone\Messaging\Support\MessageBuilder;
 use Exception;
 use Ramsey\Uuid\Uuid;
 use stdClass;
+use Test\Ecotone\Messaging\Fixture\Handler\ExceptionalMessageHandler;
 
 /**
  * Class InboundAmqpGatewayBuilder
@@ -74,6 +76,99 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
             $message->getPayload(),
             "some"
         );
+    }
+
+    public function test_throwing_exception_and_requeuing_when_stop_on_error_is_defined()
+    {
+        $queueName = Uuid::uuid4()->toString();
+        $amqpQueues = [
+            AmqpQueue::createWith($queueName)
+                ->withExclusivity()
+        ];
+        $amqpExchanges = [];
+        $amqpBindings = [];
+        $requestChannel = "exceptionChannel";
+        $channelWithException = DirectChannel::create();
+        $channelWithException->subscribe(ExceptionalMessageHandler::create());
+        $successChannel = QueueChannel::create();
+        $amqpConnectionReferenceName = "connection";
+        $messageToSend = MessageBuilder::withPayload("some")->build();
+        $converters = [];
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
+            ->withDefaultRoutingKey($queueName);
+        $this->send($outboundAmqpGatewayBuilder, InMemoryChannelResolver::createEmpty(), $referenceSearchService, $messageToSend);
+
+        $this->expectException(\RuntimeException::class);
+
+        $this->createAmqpInboundAdapter($queueName, $requestChannel, $amqpConnectionReferenceName)
+            ->build(
+                InMemoryChannelResolver::createFromAssociativeArray([$requestChannel => $channelWithException]),
+                $referenceSearchService,
+                PollingMetadata::create("")
+                    ->setStopOnError(true)
+                    ->setExecutionAmountLimit(1)
+            )
+            ->run();
+
+        $this->createAmqpInboundAdapter($queueName, $requestChannel, $amqpConnectionReferenceName)
+            ->build(
+                InMemoryChannelResolver::createFromAssociativeArray([$requestChannel => $successChannel]),
+                $referenceSearchService,
+                PollingMetadata::create("")
+                    ->setStopOnError(true)
+                    ->setExecutionAmountLimit(1)
+            )
+            ->run();
+
+        $this->assertNotNull($successChannel->receive());
+    }
+
+    public function test_throwing_exception_and_rejecting_when_stop_on_error_is_defined_with_error_channel()
+    {
+        $queueName = Uuid::uuid4()->toString();
+        $amqpQueues = [
+            AmqpQueue::createWith($queueName)
+                ->withExclusivity()
+        ];
+        $amqpExchanges = [];
+        $amqpBindings = [];
+        $requestChannelName = "requestChannel";
+        $inboundRequestChannel = DirectChannel::create();
+        $inboundRequestChannel->subscribe(ExceptionalMessageHandler::create());
+        $amqpConnectionReferenceName = "connection";
+        $messageToSend = MessageBuilder::withPayload("some")->build();
+        $converters = [];
+        $errorChannel = QueueChannel::create();
+        $inMemoryChannelResolver = InMemoryChannelResolver::createFromAssociativeArray(
+            [
+                $requestChannelName => $inboundRequestChannel,
+                "errorChannel" => $errorChannel
+            ]
+        );
+        $referenceSearchService = $this->createReferenceSearchService($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters);
+
+        $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
+            ->withDefaultRoutingKey($queueName);
+        $this->send($outboundAmqpGatewayBuilder, $inMemoryChannelResolver, $referenceSearchService, $messageToSend);
+
+        $this->expectException(\RuntimeException::class);
+
+        $inboundAmqpAdapter = $this->createAmqpInboundAdapter($queueName, $requestChannelName, $amqpConnectionReferenceName);
+        $inboundAmqpGateway = $inboundAmqpAdapter
+            ->build(
+                $inMemoryChannelResolver,
+                $referenceSearchService,
+                PollingMetadata::create("")
+                    ->setErrorChannelName("errorChannel")
+                    ->setStopOnError(true)
+                    ->setExecutionAmountLimit(1)
+            );
+
+        $inboundAmqpGateway->run();
+
+        $this->assertNull($errorChannel->receive());
     }
 
     /**
@@ -174,7 +269,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
      * @param PollingMetadata $pollingMetadata
      * @return Message|null
      */
-    private function receiveWithPollingMetadata(AmqpInboundChannelAdapterBuilder $inboundAmqpGatewayBuilder, QueueChannel $inboundRequestChannel, ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): ?Message
+    private function receiveWithPollingMetadata(AmqpInboundChannelAdapterBuilder $inboundAmqpGatewayBuilder, MessageChannel $inboundRequestChannel, ChannelResolver $channelResolver, ReferenceSearchService $referenceSearchService, PollingMetadata $pollingMetadata): ?Message
     {
         $inboundAmqpGateway = $inboundAmqpGatewayBuilder
             ->build($channelResolver, $referenceSearchService, $pollingMetadata);
