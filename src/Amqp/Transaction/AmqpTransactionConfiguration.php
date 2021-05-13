@@ -62,12 +62,11 @@ class AmqpTransactionConfiguration implements AnnotationModule
 
         $configuration
             ->registerAroundMethodInterceptor(
-                AroundInterceptorReference::createWithDirectObject(
+                AroundInterceptorReference::createWithDirectObjectAndResolveConverters(
                     new AmqpTransactionInterceptor($connectionFactories),
                     "transactional",
                     Precedence::DATABASE_TRANSACTION_PRECEDENCE - 1,
-                    $pointcut,
-                    []
+                    $pointcut
                 )
             );
     }
