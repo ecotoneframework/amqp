@@ -1,4 +1,4 @@
-name: Ecotone Dbal
+name: Ecotone Amqp
 
 on: [push, pull_request]
 
