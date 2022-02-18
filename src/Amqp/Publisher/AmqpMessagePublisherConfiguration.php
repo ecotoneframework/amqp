@@ -3,6 +3,7 @@
 
 namespace Ecotone\Amqp\Publisher;
 
+use Ecotone\Messaging\MessagePublisher;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 /**
@@ -71,7 +72,7 @@ class AmqpMessagePublisherConfiguration
      * @param string $amqpConnectionReference
      * @return AmqpMessagePublisherConfiguration
      */
-    public static function create(string $publisherReferenceName, string $exchangeName = "", ?string $outputDefaultConversionMediaType = null, string $amqpConnectionReference = AmqpConnectionFactory::class): self
+    public static function create(string $publisherReferenceName = MessagePublisher::class, string $exchangeName = "", ?string $outputDefaultConversionMediaType = null, string $amqpConnectionReference = AmqpConnectionFactory::class): self
     {
         return new self($amqpConnectionReference, $exchangeName, $outputDefaultConversionMediaType, $publisherReferenceName);
     }
