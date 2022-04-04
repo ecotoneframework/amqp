@@ -65,7 +65,7 @@ class AmqpTransactionConfiguration implements AnnotationModule
         }
 
         if ($isTransactionWrapperEnabled) {
-            $configuration->requireReferences($amqpConfiguration->getDefaultConnectionReferenceNames());
+            $configuration->requireReferences($connectionFactories);
         }
 
         $configuration
