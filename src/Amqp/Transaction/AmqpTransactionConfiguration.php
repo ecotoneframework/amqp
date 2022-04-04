@@ -47,17 +47,25 @@ class AmqpTransactionConfiguration implements AnnotationModule
             }
         }
 
+        $isTransactionWrapperEnabled = false;
         if ($amqpConfiguration->isTransactionOnAsynchronousEndpoints()) {
             $pointcut .= "||" . AsynchronousRunningEndpoint::class;
+            $isTransactionWrapperEnabled = true;
         }
         if ($amqpConfiguration->isTransactionOnCommandBus()) {
             $pointcut .= "||" . CommandBus::class . "";
+            $isTransactionWrapperEnabled = true;
         }
         if ($amqpConfiguration->isTransactionOnConsoleCommands()) {
             $pointcut .= "||" . ConsoleCommand::class . "";
+            $isTransactionWrapperEnabled = true;
         }
         if ($amqpConfiguration->getDefaultConnectionReferenceNames()) {
             $connectionFactories = $amqpConfiguration->getDefaultConnectionReferenceNames();
+        }
+
+        if ($isTransactionWrapperEnabled) {
+            $configuration->requireReferences($amqpConfiguration->getDefaultConnectionReferenceNames());
         }
 
         $configuration
