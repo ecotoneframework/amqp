@@ -63,7 +63,7 @@ class AmqpConsumerModule implements AnnotationModule
                 ->withEndpointId($endpointId . ".target")
                 ->withInputChannelName($endpointId)
                 ->withMethodParameterConverters($annotationParameterBuilder->createParameterWithDefaults(
-                    InterfaceToCall::create($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
+                    $interfaceToCallRegistry->getFor($amqpConsumer->getClassName(), $amqpConsumer->getMethodName()),
                     false
                 ));
         }
