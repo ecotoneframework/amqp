@@ -22,6 +22,7 @@ use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderB
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeadersBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderValueBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagePublisher;
 use Ecotone\Messaging\MessagingException;
@@ -200,7 +201,7 @@ class AmqpPublisherModuleTest extends TestCase
      */
     private function prepareConfiguration(array $extensions): MessagingSystemConfiguration
     {
-        $cqrsMessagingModule = AmqpPublisherModule::create(InMemoryAnnotationFinder::createEmpty());
+        $cqrsMessagingModule = AmqpPublisherModule::create(InMemoryAnnotationFinder::createEmpty(), InterfaceToCallRegistry::createEmpty());
 
         $extendedConfiguration        = $this->createMessagingSystemConfiguration();
         $moduleReferenceSearchService = ModuleReferenceSearchService::createEmpty();
@@ -208,7 +209,8 @@ class AmqpPublisherModuleTest extends TestCase
         $cqrsMessagingModule->prepare(
             $extendedConfiguration,
             $extensions,
-            $moduleReferenceSearchService
+            $moduleReferenceSearchService,
+            InterfaceToCallRegistry::createEmpty()
         );
 
         return $extendedConfiguration;

@@ -21,6 +21,7 @@ use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Conversion\ArrayToJson\ArrayToJsonConverterBuilder;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Handler\InMemoryReferenceSearchService;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\PollableChannel;
 use Ecotone\Messaging\Support\InvalidArgumentException;
@@ -53,7 +54,7 @@ class AmqpModuleTest extends AmqpMessagingTest
         $amqpChannelBuilder = AmqpBackedMessageChannelBuilder::create("amqpChannel");
         $messagingSystem    = MessagingSystemConfiguration::prepareWithDefaults(
             InMemoryModuleMessaging::createWith(
-                [AmqpModule::create(InMemoryAnnotationFinder::createEmpty())], [
+                [AmqpModule::create(InMemoryAnnotationFinder::createEmpty(), InterfaceToCallRegistry::createEmpty())], [
                     ServiceConfiguration::createWithDefaults()
                         ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON),
                     $amqpChannelBuilder
@@ -107,7 +108,7 @@ class AmqpModuleTest extends AmqpMessagingTest
      */
     private function prepareConfiguration(array $extensions): ModuleReferenceSearchService
     {
-        $cqrsMessagingModule = AmqpModule::create(InMemoryAnnotationFinder::createEmpty());
+        $cqrsMessagingModule = AmqpModule::create(InMemoryAnnotationFinder::createEmpty(), InterfaceToCallRegistry::createEmpty());
 
         $extendedConfiguration        = $this->createMessagingSystemConfiguration();
         $moduleReferenceSearchService = ModuleReferenceSearchService::createEmpty();
@@ -115,7 +116,8 @@ class AmqpModuleTest extends AmqpMessagingTest
         $cqrsMessagingModule->prepare(
             $extendedConfiguration,
             $extensions,
-            $moduleReferenceSearchService
+            $moduleReferenceSearchService,
+            InterfaceToCallRegistry::createEmpty()
         );
 
         return $moduleReferenceSearchService;

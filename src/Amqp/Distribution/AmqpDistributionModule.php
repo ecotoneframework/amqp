@@ -22,6 +22,7 @@ use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderB
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeadersBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayHeaderValueBuilder;
 use Ecotone\Messaging\Handler\Gateway\ParameterToMessageConverter\GatewayPayloadBuilder;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\ServiceActivator\ServiceActivatorBuilder;
 use Ecotone\Messaging\MessageHeaders;
 use Ecotone\Messaging\MessagePublisher;
@@ -49,11 +50,11 @@ class AmqpDistributionModule
         $this->distributedCommandHandlers = $distributedCommandHandlers;
     }
 
-    public static function create(AnnotationFinder $annotationFinder) : self
+    public static function create(AnnotationFinder $annotationFinder, InterfaceToCallRegistry $interfaceToCallRegistry) : self
     {
         return new self(
-            DistributedGatewayModule::getDistributedEventHandlerRoutingKeys($annotationFinder),
-            DistributedGatewayModule::getDistributedCommandHandlerRoutingKeys($annotationFinder)
+            DistributedGatewayModule::getDistributedEventHandlerRoutingKeys($annotationFinder, $interfaceToCallRegistry),
+            DistributedGatewayModule::getDistributedCommandHandlerRoutingKeys($annotationFinder, $interfaceToCallRegistry)
         );
     }
 

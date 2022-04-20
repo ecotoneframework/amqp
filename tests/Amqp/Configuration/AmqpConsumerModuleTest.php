@@ -14,6 +14,7 @@ use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
 use Ecotone\Messaging\Config\MessagingSystemConfiguration;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\Converter\PayloadBuilder;
 use Ecotone\Messaging\Handler\ServiceActivator\ServiceActivatorBuilder;
 use Ecotone\Messaging\MessagingException;
@@ -89,7 +90,7 @@ class AmqpConsumerModuleTest extends TestCase
      */
     private function prepareConfiguration(array $classes, array $extensions): MessagingSystemConfiguration
     {
-        $cqrsMessagingModule = AmqpConsumerModule::create(InMemoryAnnotationFinder::createFrom($classes));
+        $cqrsMessagingModule = AmqpConsumerModule::create(InMemoryAnnotationFinder::createFrom($classes), InterfaceToCallRegistry::createEmpty());
 
         $extendedConfiguration = $this->createMessagingSystemConfiguration();
         $moduleReferenceSearchService = ModuleReferenceSearchService::createEmpty();
@@ -97,7 +98,8 @@ class AmqpConsumerModuleTest extends TestCase
         $cqrsMessagingModule->prepare(
             $extendedConfiguration,
             $extensions,
-            $moduleReferenceSearchService
+            $moduleReferenceSearchService,
+            InterfaceToCallRegistry::createEmpty()
         );
 
         return $extendedConfiguration;

@@ -15,6 +15,7 @@ use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCall;
+use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\ServiceActivator\ServiceActivatorBuilder;
 
 #[ModuleAnnotation]
@@ -44,7 +45,7 @@ class AmqpConsumerModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public static function create(AnnotationFinder $annotationRegistrationService): static
+    public static function create(AnnotationFinder $annotationRegistrationService, InterfaceToCallRegistry $interfaceToCallRegistry): static
     {
         $annotationParameterBuilder = ParameterConverterAnnotationFactory::create();
         $amqpConsumers = $annotationRegistrationService->findAnnotatedMethods(MessageConsumer::class);
@@ -78,7 +79,7 @@ class AmqpConsumerModule implements AnnotationModule
     /**
      * @inheritDoc
      */
-    public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService): void
+    public function prepare(Configuration $configuration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService, InterfaceToCallRegistry $interfaceToCallRegistry): void
     {
         /** @var AmqpMessageConsumerConfiguration $extensionObject */
         foreach ($extensionObjects as $extensionObject) {
