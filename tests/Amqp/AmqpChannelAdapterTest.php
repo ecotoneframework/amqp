@@ -705,7 +705,7 @@ class AmqpChannelAdapterTest extends AmqpMessagingTest
 
         $inboundAmqpAdapter = $this->createAmqpInboundAdapter($deadLetterQueue->getQueueName(), $requestChannelName, $amqpConnectionReferenceName);
         $deadLetterQueueChannelAdapter = $inboundAmqpAdapter
-            ->build($inMemoryChannelResolver, $referenceSearchService, PollingMetadata::create("")->setExecutionTimeLimitInMilliseconds(1));
+            ->build($inMemoryChannelResolver, $referenceSearchService, PollingMetadata::create("")->setExecutionTimeLimitInMilliseconds(3000));
         $deadLetterQueueChannelAdapter->run();
         $this->assertNotNull($this->receiveOnce($inboundAmqpAdapter, $inboundQueueChannel, $inMemoryChannelResolver, $referenceSearchService), "Message was not dead letter queued");
     }
