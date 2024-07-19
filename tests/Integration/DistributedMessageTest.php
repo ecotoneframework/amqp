@@ -16,6 +16,10 @@ use Test\Ecotone\Amqp\Fixture\DistributedMessage\Receiver\TicketServiceReceiver;
 /**
  * @internal
  */
+/**
+ * licence Apache-2.0
+ * @internal
+ */
 final class DistributedMessageTest extends AmqpMessagingTest
 {
     public function test_distributing_message_to_another_service(): void

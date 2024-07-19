@@ -15,6 +15,10 @@ use Throwable;
 /**
  * @internal
  */
+/**
+ * licence Apache-2.0
+ * @internal
+ */
 final class FailureTransactionTest extends AmqpMessagingTest
 {
     public function test_order_is_never_placed_when_transaction_is_failed(): void

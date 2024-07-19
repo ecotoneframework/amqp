@@ -16,6 +16,10 @@ use Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceReceiv
 /**
  * @internal
  */
+/**
+ * licence Apache-2.0
+ * @internal
+ */
 final class DistributedDeadLetterTest extends AmqpMessagingTest
 {
     public function test_exception_handling_with_retry_dead_letter_when_using_distribution(): void

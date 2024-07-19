@@ -19,6 +19,10 @@ use Test\Ecotone\Amqp\Fixture\AmqpConsumer\AmqpConsumerExample;
 /**
  * @internal
  */
+/**
+ * licence Apache-2.0
+ * @internal
+ */
 final class ConsumerAndPublisherTest extends AmqpMessagingTest
 {
     public function testing_sending_message_using_publisher_and_receiving_using_consumer()
