@@ -5,6 +5,8 @@ namespace Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver;
 use Ecotone\Modelling\Attribute\CommandHandler;
 use Ecotone\Modelling\Attribute\Distributed;
 use Ecotone\Modelling\Attribute\QueryHandler;
+use Ecotone\Modelling\EventBus;
+use Test\Ecotone\Amqp\Fixture\DistributedCommandBus\Receiver\Event\TicketCreated;
 
 /**
  * licence Apache-2.0
@@ -12,15 +14,35 @@ use Ecotone\Modelling\Attribute\QueryHandler;
 class TicketServiceReceiver
 {
     public const CREATE_TICKET_ENDPOINT = 'createTicket';
+    public const CREATE_TICKET_WITH_EVENT_ENDPOINT = 'createTicketWithEvent';
     public const GET_TICKETS_COUNT      = 'getTicketsCount';
 
     private array $tickets = [];
+
+    public function __construct(private array $delays = [])
+    {
+
+    }
 
     #[Distributed]
     #[CommandHandler(self::CREATE_TICKET_ENDPOINT)]
     public function registerTicket(string $ticket): void
     {
         $this->tickets[] = $ticket;
+    }
+
+    #[Distributed]
+    #[CommandHandler(self::CREATE_TICKET_WITH_EVENT_ENDPOINT)]
+    public function registerTicketWithEvent(string $ticket, EventBus $eventBus): void
+    {
+        $delay = array_shift($this->delays);
+        if ($delay) {
+            sleep($delay);
+        }
+
+        $this->tickets[] = $ticket;
+
+        $eventBus->publish(new TicketCreated($ticket));
     }
 
     #[QueryHandler(self::GET_TICKETS_COUNT)]
