@@ -9,9 +9,9 @@ use Ecotone\Lite\Test\FlowTestSupport;
 use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ServiceConfiguration;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
-use Test\Ecotone\Amqp\AmqpMessagingTest;
-use Test\Ecotone\Amqp\Fixture\DistributedMessage\Publisher\UserService;
-use Test\Ecotone\Amqp\Fixture\DistributedMessage\Receiver\TicketServiceReceiver;
+use Test\Ecotone\Amqp\AmqpMessagingTestCase;
+use Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher\UserService;
+use Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceReceiver;
 
 /**
  * @internal
@@ -20,19 +20,23 @@ use Test\Ecotone\Amqp\Fixture\DistributedMessage\Receiver\TicketServiceReceiver;
  * licence Apache-2.0
  * @internal
  */
-final class DistributedMessageTest extends AmqpMessagingTest
+final class DistributedDeadLetterTestCase extends AmqpMessagingTestCase
 {
-    public function test_distributing_message_to_another_service(): void
+    public function test_exception_handling_with_retry_dead_letter_when_using_distribution(): void
     {
-        $userService = $this->bootstrapEcotone('user_service', ['Test\Ecotone\Amqp\Fixture\DistributedMessage\Publisher'], [new UserService()]);
-        $ticketService = $this->bootstrapEcotone('ticket_service', ['Test\Ecotone\Amqp\Fixture\DistributedMessage\Receiver'], [new TicketServiceReceiver()]);
+        $userService = $this->bootstrapEcotone('user_service', ['Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher'], [new UserService()]);
+        $ticketService = $this->bootstrapEcotone('ticket_service', ['Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver'], [new TicketServiceReceiver()]);
 
         $ticketService->run('ticket_service');
-        self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
+        self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_ERROR_TICKETS_COUNT));
 
         $userService->sendCommandWithRoutingKey(UserService::CHANGE_BILLING_DETAILS, 'user_service');
+
         $ticketService->run('ticket_service');
-        self::assertEquals(1, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
+        self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_ERROR_TICKETS_COUNT));
+
+        $ticketService->run('ticket_service');
+        self::assertEquals(1, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_ERROR_TICKETS_COUNT));
     }
 
     private function bootstrapEcotone(string $serviceName, array $namespaces, array $services): FlowTestSupport
