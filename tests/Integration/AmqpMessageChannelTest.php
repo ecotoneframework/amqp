@@ -30,7 +30,7 @@ use Test\Ecotone\Amqp\Fixture\Order\OrderService;
  * licence Apache-2.0
  * @internal
  */
-final class AmqpMessageChannelTestCase extends AmqpMessagingTestCase
+final class AmqpMessageChannelTest extends AmqpMessagingTestCase
 {
     public function test_sending_and_receiving_message_from_amqp_message_channel()
     {

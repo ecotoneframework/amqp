@@ -21,7 +21,7 @@ use Test\Ecotone\Amqp\Fixture\Calendar\ScheduleMeeting;
  * licence Apache-2.0
  * @internal
  */
-final class CallAggregateAsynchronousEndpointTestCase extends AmqpMessagingTestCase
+final class CallAggregateAsynchronousEndpointTest extends AmqpMessagingTestCase
 {
     public function test_sending_command_to_aggregate(): void
     {

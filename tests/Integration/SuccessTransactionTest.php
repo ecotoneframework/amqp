@@ -18,7 +18,7 @@ use Test\Ecotone\Amqp\Fixture\SuccessTransaction\OrderService;
  * licence Apache-2.0
  * @internal
  */
-final class SuccessTransactionTestCase extends AmqpMessagingTestCase
+final class SuccessTransactionTest extends AmqpMessagingTestCase
 {
     public function test_order_is_placed_when_transaction_is_successful(): void
     {

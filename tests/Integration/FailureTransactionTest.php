@@ -10,9 +10,7 @@ use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ServiceConfiguration;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
-use Test\Ecotone\Amqp\Fixture\Order\OrderErrorHandler;
-use Test\Ecotone\Amqp\Fixture\Order\OrderService;
-use Test\Ecotone\Amqp\Fixture\Shop\ShoppingCart;
+use Throwable;
 
 /**
  * @internal
@@ -21,40 +19,45 @@ use Test\Ecotone\Amqp\Fixture\Shop\ShoppingCart;
  * licence Apache-2.0
  * @internal
  */
-final class GeneralAmqpTestCase extends AmqpMessagingTestCase
+final class FailureTransactionTest extends AmqpMessagingTestCase
 {
-    public function test_products_are_on_list_after_being_ordered(): void
+    public function test_order_is_never_placed_when_transaction_is_failed(): void
     {
         $ecotone = $this->bootstrapEcotone(
-            namespaces: ['Test\Ecotone\Amqp\Fixture\Order'],
-            services: [new OrderService(), new OrderErrorHandler()],
+            ['Test\Ecotone\Amqp\Fixture\FailureTransaction'],
+            [new \Test\Ecotone\Amqp\Fixture\FailureTransaction\OrderService()]
         );
 
-        $ecotone->sendCommandWithRoutingKey('order.register', 'milk');
-        self::assertEquals(
-            [],
-            $ecotone->sendQueryWithRouting('order.getOrders')
-        );
-        $ecotone->run('orders');
-        self::assertEquals(
-            ['milk'],
-            $ecotone->sendQueryWithRouting('order.getOrders')
+        try {
+            $ecotone->sendCommandWithRoutingKey('order.register', 'milk');
+        } catch (Throwable) {
+        }
+
+        try {
+            $ecotone->sendCommandWithRoutingKey('order.register', 'milk');
+        } catch (Throwable) {
+        }
+
+        self::assertNull(
+            $ecotone
+                ->run('placeOrder')
+                ->sendQueryWithRouting('order.getOrder')
         );
     }
 
-    public function test_adding_product_to_shopping_cart_with_publisher_and_consumer(): void
+    public function test_order_is_never_placed_when_transaction_is_failed_with_fatal_error(): void
     {
         $ecotone = $this->bootstrapEcotone(
-            namespaces: ['Test\Ecotone\Amqp\Fixture\Shop'],
-            services: [new ShoppingCart()],
+            ['Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError'],
+            [new \Test\Ecotone\Amqp\Fixture\FailureTransactionWithFatalError\OrderService()]
         );
 
-        self::assertEquals(
-            ['window'],
+        self::assertNull(
             $ecotone
-                ->sendCommandWithRoutingKey('addToBasket', 'window')
-                ->run('addToCart')
-                ->sendQueryWithRouting('getShoppingCartList')
+                ->sendCommandWithRoutingKey('order.register', 'window')
+                ->run('placeOrder')
+                ->run('placeOrder')
+                ->sendQueryWithRouting('order.getOrder')
         );
     }
 

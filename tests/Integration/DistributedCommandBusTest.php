@@ -25,7 +25,7 @@ use Test\Ecotone\Amqp\Fixture\DistributedCommandBus\ReceiverEventHandler\TicketN
  * licence Apache-2.0
  * @internal
  */
-final class DistributedCommandBusTestCase extends AmqpMessagingTestCase
+final class DistributedCommandBusTest extends AmqpMessagingTestCase
 {
     public function test_distributing_command_to_another_service(): void
     {

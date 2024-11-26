@@ -34,7 +34,7 @@ use Test\Ecotone\Amqp\AmqpMessagingTestCase;
  * licence Apache-2.0
  * @internal
  */
-class AmqpModuleTestCase extends AmqpMessagingTestCase
+final class AmqpModuleTest extends AmqpMessagingTestCase
 {
     public function test_registering_amqp_backed_message_channel()
     {
