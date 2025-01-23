@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
+use AMQPChannelException;
+use AMQPConnectionException;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Messaging\Channel\PollableChannel\Serialization\OutboundMessageConverter;
 use Ecotone\Messaging\Conversion\ConversionService;
@@ -74,11 +76,17 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         $messageToSend
             ->setDeliveryMode($this->defaultPersistentDelivery ? AmqpMessage::DELIVERY_MODE_PERSISTENT : AmqpMessage::DELIVERY_MODE_NON_PERSISTENT);
 
-        $this->connectionFactory->getProducer()
-            ->setTimeToLive($outboundMessage->getTimeToLive())
-            ->setDelayStrategy(new HeadersExchangeDelayStrategy())
-            ->setDeliveryDelay($outboundMessage->getDeliveryDelay())
+        try {
+            $this->connectionFactory->getProducer()
+                ->setTimeToLive($outboundMessage->getTimeToLive())
+                ->setDelayStrategy(new HeadersExchangeDelayStrategy())
+                ->setDeliveryDelay($outboundMessage->getDeliveryDelay())
 //            this allow for having queue per delay instead of queue per delay + exchangeName
-            ->send(new AmqpTopic($exchangeName), $messageToSend);
+                ->send(new AmqpTopic($exchangeName), $messageToSend);
+        } catch (AMQPConnectionException|AMQPChannelException $exception) {
+            $this->connectionFactory->reconnect();
+
+            throw $exception;
+        }
     }
 }
