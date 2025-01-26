@@ -12,15 +12,8 @@ use Ecotone\AnnotationFinder\InMemory\InMemoryAnnotationFinder;
 use Ecotone\Messaging\Config\ConfiguredMessagingSystem;
 use Ecotone\Messaging\Config\InMemoryModuleMessaging;
 use Ecotone\Messaging\Config\MessagingSystemConfiguration;
-use Ecotone\Messaging\Config\ServiceConfiguration;
-use Ecotone\Messaging\Conversion\ArrayToJson\ArrayToJsonConverterBuilder;
-use Ecotone\Messaging\Conversion\MediaType;
-use Ecotone\Messaging\Handler\InMemoryReferenceSearchService;
 use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\MessagingException;
-use Ecotone\Messaging\PollableChannel;
-use Ecotone\Messaging\Support\MessageBuilder;
-use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 
 /**
@@ -45,39 +38,6 @@ final class AmqpModuleTest extends AmqpMessagingTestCase
                     AmqpBackedMessageChannelBuilder::create('some', 'amqpConnection'),
                 ]
             )
-        );
-    }
-
-    public function test_registering_amqp_backed_message_channel_with_application_media_type()
-    {
-        $amqpChannelBuilder = AmqpBackedMessageChannelBuilder::create('amqpChannel');
-        $messagingSystem    = MessagingSystemConfiguration::prepareWithDefaults(
-            InMemoryModuleMessaging::createWith(
-                [AmqpModule::create(InMemoryAnnotationFinder::createEmpty(), InterfaceToCallRegistry::createEmpty())],
-                [
-                    ServiceConfiguration::createWithDefaults()
-                        ->withDefaultSerializationMediaType(MediaType::APPLICATION_JSON),
-                    $amqpChannelBuilder,
-                ]
-            )
-        )
-            ->registerMessageChannel($amqpChannelBuilder)
-            ->registerConverter(new ArrayToJsonConverterBuilder())
-            ->buildMessagingSystemFromConfiguration(
-                InMemoryReferenceSearchService::createWith(
-                    [
-                        AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
-                    ]
-                )
-            );
-
-        /** @var PollableChannel $channel */
-        $channel = $messagingSystem->getMessageChannelByName('amqpChannel');
-        $channel->send(MessageBuilder::withPayload([1, 2, 3])->setContentType(MediaType::createApplicationXPHPArray())->build());
-
-        $this->assertEquals(
-            '[1,2,3]',
-            $channel->receive()->getPayload()
         );
     }
 

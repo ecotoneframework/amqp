@@ -14,6 +14,7 @@ use Interop\Queue\Context;
 use Interop\Queue\SubscriptionConsumer;
 use ReflectionClass;
 use ReflectionProperty;
+use RuntimeException;
 
 /**
  * licence Apache-2.0
@@ -37,7 +38,10 @@ class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFacto
             $this->reconnect();
         }
 
-        return $this->connectionFactory->createContext();
+        $context = $this->connectionFactory->createContext();
+        $context->getExtChannel()->setConfirmCallback(fn () => false, fn () => throw new RuntimeException('Message was failed to be persisted in RabbitMQ instance. Check RabbitMQ server logs.'));
+
+        return $context;
     }
 
     public function getConnectionInstanceId(): string
@@ -62,6 +66,10 @@ class AmqpReconnectableConnectionFactory implements ReconnectableConnectionFacto
         }
 
         Assert::isSubclassOf($context, AmqpContext::class, 'Context must be ' . AmqpContext::class);
+
+        if (! $context->getExtChannel()->getConnection()->isConnected()) {
+            return true;
+        }
 
         return ! $context->getExtChannel()->isConnected();
     }
