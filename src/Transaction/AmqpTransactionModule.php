@@ -19,6 +19,7 @@ use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\Logger\LoggingGateway;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorBuilder;
+use Ecotone\Messaging\Handler\Recoverability\RetryRunner;
 use Ecotone\Messaging\Precedence;
 use Ecotone\Modelling\CommandBus;
 use Enqueue\AmqpExt\AmqpConnectionFactory;
@@ -67,6 +68,7 @@ class AmqpTransactionModule implements AnnotationModule
         $messagingConfiguration->registerServiceDefinition(AmqpTransactionInterceptor::class, [
             array_map(fn (string $connectionFactory) => Reference::to($connectionFactory), $connectionFactories),
             Reference::to(LoggingGateway::class),
+            Reference::to(RetryRunner::class),
         ]);
 
         $messagingConfiguration
