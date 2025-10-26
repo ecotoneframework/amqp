@@ -14,7 +14,6 @@ use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
 use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
 use Ecotone\Enqueue\EnqueueMessageChannel;
-use Ecotone\Lite\EcotoneLite;
 use Ecotone\Lite\Test\FlowTestSupport;
 use Ecotone\Messaging\Channel\DirectChannel;
 use Ecotone\Messaging\Channel\QueueChannel;
@@ -37,8 +36,8 @@ use Ecotone\Messaging\MessagingException;
 use Ecotone\Messaging\PollableChannel;
 use Ecotone\Messaging\Support\MessageBuilder;
 use Ecotone\Test\ComponentTestBuilder;
-use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Exception;
+use Interop\Amqp\AmqpConnectionFactory;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use stdClass;
@@ -203,16 +202,21 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
      */
     private function prepareMessaging(string $amqpConnectionReferenceName, array $amqpExchanges, array $amqpQueues, array $amqpBindings, array $converters): ComponentTestBuilder
     {
-        return ComponentTestBuilder::create(
+        $builder = ComponentTestBuilder::create(
             configuration: ServiceConfiguration::createWithDefaults()->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
                 ->withExtensionObjects(array_merge(
                     $amqpExchanges,
                     $amqpQueues,
                     $amqpBindings
                 ))
-        )
-            ->withReference($amqpConnectionReferenceName, $this->getCachedConnectionFactory())
-            ->withConverters($converters);
+        );
+
+        // Register all connection factory references to support both implementations
+        foreach ($this->getConnectionFactoryReferences() as $referenceName => $connectionFactory) {
+            $builder = $builder->withReference($referenceName, $connectionFactory);
+        }
+
+        return $builder->withConverters($converters);
     }
 
     /**
@@ -702,10 +706,10 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
     public function test_delaying_the_message()
     {
         $queueName = Uuid::uuid4()->toString();
-        $ecotoneLite = EcotoneLite::bootstrapForTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [],
             [
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
@@ -734,12 +738,12 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $queueName = Uuid::uuid4()->toString();
         $deadLetterQueueName = Uuid::uuid4()->toString();
         $deadLetterQueue = AmqpQueue::createWith($deadLetterQueueName);
-        $ecotoneLite = EcotoneLite::bootstrapForTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [ExceptionalMessageHandler::class, AmqpConsumerExample::class],
             [
                 ExceptionalMessageHandler::createWithRejectException(),
                 new AmqpConsumerExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))

@@ -7,7 +7,6 @@ namespace Test\Ecotone\Amqp\Integration;
 use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Attribute\RabbitConsumer;
 use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
-use Ecotone\Lite\EcotoneLite;
 use Ecotone\Messaging\Attribute\MediaTypeConverter;
 use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
 use Ecotone\Messaging\Config\ModulePackageList;
@@ -18,7 +17,6 @@ use Ecotone\Messaging\Handler\Type;
 use Ecotone\Messaging\MessagePublisher;
 use Ecotone\Messaging\Support\LicensingException;
 use Ecotone\Test\LicenceTesting;
-use Enqueue\AmqpExt\AmqpConnectionFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use Ramsey\Uuid\Uuid;
 use stdClass;
@@ -43,11 +41,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $this->expectException(LicensingException::class);
 
-        EcotoneLite::bootstrapFlowTesting(
+        $this->bootstrapFlowTesting(
             [AmqpConsumerAttributeExample::class],
             [
                 new AmqpConsumerAttributeExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
@@ -58,20 +56,20 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLiteConsumer = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLiteConsumer = $this->bootstrapFlowTesting(
             [AmqpConsumerAttributeExample::class],
             [
                 new AmqpConsumerAttributeExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE])),
             licenceKey: LicenceTesting::VALID_LICENCE
         );
-        $ecotoneLitePublisher = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLitePublisher = $this->bootstrapFlowTesting(
             [],
             [
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
@@ -100,11 +98,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerAttributeExample::class],
             [
                 new AmqpConsumerAttributeExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
@@ -134,11 +132,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerWithFailStrategyAttributeExample::class],
             [
                 new AmqpConsumerWithFailStrategyAttributeExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
@@ -169,11 +167,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerWithInstantRetryExample::class],
             [
                 new AmqpConsumerWithInstantRetryExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
@@ -204,11 +202,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerWithInstantRetryAndErrorChannelExample::class],
             [
                 new AmqpConsumerWithInstantRetryAndErrorChannelExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
@@ -242,11 +240,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerAttributeExample::class],
             [
                 new AmqpConsumerAttributeExample(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
@@ -279,11 +277,11 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
     {
         $endpointId = 'amqp_consumer_attribute';
         $queueName = 'test_queue';
-        $ecotoneLite = EcotoneLite::bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapFlowTesting(
             [AmqpConsumerAttributeWithObject::class, StdClassConvert::class],
             [
                 new AmqpConsumerAttributeWithObject(), new StdClassConvert(),
-                AmqpConnectionFactory::class => $this->getCachedConnectionFactory(),
+                ...$this->getConnectionFactoryReferences(),
             ],
             ServiceConfiguration::createWithDefaults()
                 ->withEnvironment('prod')
