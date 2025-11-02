@@ -16,6 +16,7 @@ use Ecotone\Messaging\Consumer\ConsumerPositionTracker;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Conversion\MediaType;
 use Ecotone\Messaging\Endpoint\PollingConsumer\ConnectionException;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Ecotone\Messaging\Handler\Logger\LoggingGateway;
 use Ecotone\Messaging\Message;
 use Ecotone\Messaging\Support\Assert;
@@ -113,7 +114,7 @@ class AmqpStreamInboundChannelAdapter extends EnqueueInboundChannelAdapter imple
      * - Without the loop, we'd only get one message per receiveWithTimeout() call
      * - The loop with short timeout drains all buffered messages efficiently
      */
-    public function receiveWithTimeout(int $timeout = 0): ?Message
+    public function receiveWithTimeout(PollingMetadata $pollingMetadata): ?Message
     {
         try {
             if ($message = $this->queueChannel->receive()) {
@@ -121,7 +122,7 @@ class AmqpStreamInboundChannelAdapter extends EnqueueInboundChannelAdapter imple
 
                 // sometimes AMQP does redeliver same messages from end of given batch
                 if ($this->batchCommitCoordinator->isOffsetAlreadyProcessed($streamPosition)) {
-                    return $this->receiveWithTimeout($timeout);
+                    return $this->receiveWithTimeout($pollingMetadata);
                 }
 
                 return $message;
@@ -140,7 +141,7 @@ class AmqpStreamInboundChannelAdapter extends EnqueueInboundChannelAdapter imple
             $this->startStreamConsuming($context);
 
             // Wait for messages with the specified timeout
-            $timeout = $timeout ?: $this->receiveTimeoutInMilliseconds;
+            $timeout = $pollingMetadata->getExecutionTimeLimitInMilliseconds() ?: $this->receiveTimeoutInMilliseconds;
             $timeoutInSeconds = $timeout > 0 ? $timeout / 1000.0 : 10.0;
 
             // Keep calling wait() in a loop while the consumer is active
@@ -290,6 +291,14 @@ class AmqpStreamInboundChannelAdapter extends EnqueueInboundChannelAdapter imple
             }
             $this->consumerTag = null;
         }
+    }
+
+    public function onConsumerStop(): void
+    {
+        $this->batchCommitCoordinator->commitPendingAndReset(ignoreCommitInterval: true);
+
+        $this->cancelStreamConsumer();
+        parent::onConsumerStop();
     }
 
     public function connectionException(): array
