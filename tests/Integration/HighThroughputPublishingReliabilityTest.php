@@ -8,7 +8,7 @@ use Ecotone\Amqp\AmqpPublisherConfirmations;
 use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
 use Ecotone\Lite\EcotoneLite;
 use Ecotone\Messaging\BatchMessage;
-use Ecotone\Messaging\Channel\AsyncPublishing\PublishingFailedException;
+use Ecotone\Messaging\Channel\DeliveryConfirmation\PublishingFailedException;
 use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\MessagePublisher;
@@ -23,7 +23,7 @@ use Test\Ecotone\Amqp\AmqpMessagingTestCase;
  * licence Apache-2.0
  * @internal
  */
-final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
+final class HighThroughputPublishingReliabilityTest extends AmqpMessagingTestCase
 {
     public function test_nacked_message_fails_delivery_confirmation_over_amqp_lib(): void
     {
@@ -33,7 +33,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
 
         $this->expectException(PublishingFailedException::class);
 
-        $publisher->asyncPublish(
+        $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('first message fills the queue')
                 ->append('second message overflows and gets nacked')
@@ -48,7 +48,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
 
         $this->expectException(PublishingFailedException::class);
 
-        $publisher->asyncPublish(
+        $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('first message fills the queue')
                 ->append('second message overflows and gets nacked')
@@ -92,7 +92,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
 
         $this->expectException(PublishingFailedException::class);
 
-        $publisher->asyncPublish('order that routes nowhere')->resolve();
+        $publisher->publishDeferred('order that routes nowhere')->resolve();
     }
 
     public function test_unroutable_message_fails_delivery_confirmation_over_amqp_ext(): void
@@ -102,7 +102,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
 
         $this->expectException(PublishingFailedException::class);
 
-        $publisher->asyncPublish('order that routes nowhere')->resolve();
+        $publisher->publishDeferred('order that routes nowhere')->resolve();
     }
 
     public function test_each_future_reports_outcome_of_its_own_message_when_sharing_channel(): void
@@ -111,8 +111,8 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
         $queueName = $this->declareQueue($libConnectionFactory);
         $publisher = $this->bootstrapPublisherWithRoutingKeyFromHeader($libConnectionFactory);
 
-        $routableFuture = $publisher->asyncPublish('order that reaches the queue', metadata: ['routingKey' => $queueName]);
-        $unroutableFuture = $publisher->asyncPublish('order that routes nowhere', metadata: ['routingKey' => Uuid::v7()->toRfc4122()]);
+        $routableFuture = $publisher->publishDeferred('order that reaches the queue', metadata: ['routingKey' => $queueName]);
+        $unroutableFuture = $publisher->publishDeferred('order that routes nowhere', metadata: ['routingKey' => Uuid::v7()->toRfc4122()]);
 
         $routableFuture->resolve();
 
@@ -127,8 +127,8 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
         $queueName = $this->declareQueue($extConnectionFactory);
         $publisher = $this->bootstrapPublisherWithRoutingKeyFromHeader($extConnectionFactory);
 
-        $routableFuture = $publisher->asyncPublish('order that reaches the queue', metadata: ['routingKey' => $queueName]);
-        $unroutableFuture = $publisher->asyncPublish('order that routes nowhere', metadata: ['routingKey' => Uuid::v7()->toRfc4122()]);
+        $routableFuture = $publisher->publishDeferred('order that reaches the queue', metadata: ['routingKey' => $queueName]);
+        $unroutableFuture = $publisher->publishDeferred('order that routes nowhere', metadata: ['routingKey' => Uuid::v7()->toRfc4122()]);
 
         $routableFuture->resolve();
 
@@ -144,10 +144,10 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
         $overflowQueue = $this->declareQueueRejectingOverflow($libConnectionFactory);
         $publisher = $this->bootstrapPublisherWithRoutingKeyFromHeader($libConnectionFactory);
 
-        $publisher->asyncPublish('filler order', metadata: ['routingKey' => $overflowQueue])->resolve();
+        $publisher->publishDeferred('filler order', metadata: ['routingKey' => $overflowQueue])->resolve();
 
-        $deliveredFuture = $publisher->asyncPublish('delivered order', metadata: ['routingKey' => $normalQueue]);
-        $nackedFuture = $publisher->asyncPublish('nacked order', metadata: ['routingKey' => $overflowQueue]);
+        $deliveredFuture = $publisher->publishDeferred('delivered order', metadata: ['routingKey' => $normalQueue]);
+        $nackedFuture = $publisher->publishDeferred('nacked order', metadata: ['routingKey' => $overflowQueue]);
 
         $deliveredFuture->resolve();
 
@@ -163,10 +163,10 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
         $overflowQueue = $this->declareQueueRejectingOverflow($extConnectionFactory);
         $publisher = $this->bootstrapPublisherWithRoutingKeyFromHeader($extConnectionFactory);
 
-        $publisher->asyncPublish('filler order', metadata: ['routingKey' => $overflowQueue])->resolve();
+        $publisher->publishDeferred('filler order', metadata: ['routingKey' => $overflowQueue])->resolve();
 
-        $deliveredFuture = $publisher->asyncPublish('delivered order', metadata: ['routingKey' => $normalQueue]);
-        $nackedFuture = $publisher->asyncPublish('nacked order', metadata: ['routingKey' => $overflowQueue]);
+        $deliveredFuture = $publisher->publishDeferred('delivered order', metadata: ['routingKey' => $normalQueue]);
+        $nackedFuture = $publisher->publishDeferred('nacked order', metadata: ['routingKey' => $overflowQueue]);
 
         $deliveredFuture->resolve();
 
@@ -181,7 +181,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
         $queueName = $this->declareQueue($libConnectionFactory);
         $publisher = $this->bootstrapPublisherWithRoutingKeyFromHeader($libConnectionFactory);
 
-        $future = $publisher->asyncPublish(
+        $future = $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('first delivered order', ['routingKey' => $queueName])
                 ->append('order that routes nowhere', ['routingKey' => Uuid::v7()->toRfc4122()])
@@ -240,7 +240,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
                     AmqpMessagePublisherConfiguration::create()
                         ->withAutoDeclareQueueOnSend(false)
                         ->withRoutingKeyFromHeader('routingKey')
-                        ->withAsyncPublishing(timeoutInMilliseconds: 3000),
+                        ->withHighThroughputPublishing(confirmationTimeoutInMilliseconds: 3000),
                 ]),
             licenceKey: LicenceTesting::VALID_LICENCE,
         );
@@ -273,7 +273,7 @@ final class AsyncPublishingReliabilityTest extends AmqpMessagingTestCase
                     AmqpMessagePublisherConfiguration::create()
                         ->withAutoDeclareQueueOnSend(false)
                         ->withDefaultRoutingKey($queueName)
-                        ->withAsyncPublishing(timeoutInMilliseconds: 3000),
+                        ->withHighThroughputPublishing(confirmationTimeoutInMilliseconds: 3000),
                 ]),
             licenceKey: LicenceTesting::VALID_LICENCE,
         );

@@ -11,7 +11,8 @@ use Ecotone\Lite\Test\FlowTestSupport;
 use Ecotone\Messaging\Attribute\Asynchronous;
 use Ecotone\Messaging\Attribute\Parameter\Reference;
 use Ecotone\Messaging\BatchMessage;
-use Ecotone\Messaging\Channel\AsyncPublishing\PublishingFailedException;
+use Ecotone\Messaging\Channel\DeliveryConfirmation\PublishingFailedException;
+use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
@@ -30,15 +31,15 @@ use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Enqueue\AmqpLib\AmqpConnectionFactory as AmqpLibConnection;
 use Symfony\Component\Uid\Uuid;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
-use Test\Ecotone\Amqp\Fixture\AsyncPublishing\OrderWasPlaced;
+use Test\Ecotone\Amqp\Fixture\HighThroughputPublishing\OrderWasPlaced;
 
 /**
  * licence Apache-2.0
  * @internal
  */
-final class AsyncPublishingTest extends AmqpMessagingTestCase
+final class HighThroughputPublishingTest extends AmqpMessagingTestCase
 {
-    public function test_multiple_messages_published_asynchronously_from_command_handler_are_delivered(): void
+    public function test_multiple_messages_published_from_command_handler_are_delivered(): void
     {
         $channelName = Uuid::v7()->toRfc4122();
         $orderService = $this->createOrderService($channelName);
@@ -53,7 +54,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         $this->assertCount(3, $messaging->sendQueryWithRouting('order.getReceived'));
     }
 
-    public function test_async_publishing_requires_enterprise_licence(): void
+    public function test_high_throughput_publishing_requires_enterprise_licence(): void
     {
         $channelName = Uuid::v7()->toRfc4122();
         $orderService = $this->createOrderService($channelName);
@@ -63,7 +64,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         $this->bootstrapEcotone($channelName, $orderService, licenceKey: null);
     }
 
-    public function test_async_publishing_via_message_publisher_requires_enterprise_licence(): void
+    public function test_high_throughput_publishing_via_message_publisher_requires_enterprise_licence(): void
     {
         $this->expectException(LicensingException::class);
 
@@ -75,12 +76,12 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
                 ->withExtensionObjects([
                     AmqpMessagePublisherConfiguration::create()
                         ->withDefaultRoutingKey(Uuid::v7()->toRfc4122())
-                        ->withAsyncPublishing(),
+                        ->withHighThroughputPublishing(),
                 ]),
         );
     }
 
-    public function test_async_publish_on_publisher_without_async_configuration_throws_before_publishing(): void
+    public function test_publish_deferred_on_publisher_without_non_blocking_confirmation_throws_before_publishing(): void
     {
         $queueName = Uuid::v7()->toRfc4122();
         $messaging = EcotoneLite::bootstrapFlowTesting(
@@ -99,7 +100,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
 
         $publishFailed = false;
         try {
-            $publisher->asyncPublish('order that must not be published');
+            $publisher->publishDeferred('order that must not be published');
         } catch (PublishingFailedException) {
             $publishFailed = true;
         }
@@ -108,7 +109,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         $this->assertNull($messaging->getMessageChannel('verificationChannel')->receiveWithTimeout(PollingMetadata::create('verification')->setFixedRateInMilliseconds(200)));
     }
 
-    public function test_message_publisher_async_publish_confirms_delivery_on_future_resolve(): void
+    public function test_publish_deferred_confirms_delivery_on_future_resolve(): void
     {
         $queueName = Uuid::v7()->toRfc4122();
         $context = self::getRabbitConnectionFactory()->createContext();
@@ -122,14 +123,14 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
                     AmqpMessagePublisherConfiguration::create()
                         ->withAutoDeclareQueueOnSend(true)
                         ->withDefaultRoutingKey($queueName)
-                        ->withAsyncPublishing(),
+                        ->withHighThroughputPublishing(),
                 ]),
             licenceKey: LicenceTesting::VALID_LICENCE,
         );
         $publisher = $messaging->getGateway(MessagePublisher::class);
 
-        $singleFuture = $publisher->asyncPublish('single order');
-        $batchFuture = $publisher->asyncPublish(
+        $singleFuture = $publisher->publishDeferred('single order');
+        $batchFuture = $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('first order')
                 ->append('second order', ['priority' => '5'])
@@ -172,7 +173,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         $messaging = $this->bootstrapPublisherWithVerificationChannel($queueName);
         $publisher = $messaging->getGateway(MessagePublisher::class);
 
-        $publisher->asyncPublish(
+        $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('immediate order')
                 ->append('delayed order', [MessageHeaders::DELIVERY_DELAY => 2000])
@@ -191,7 +192,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         $messaging = $this->bootstrapPublisherWithVerificationChannel($queueName);
         $publisher = $messaging->getGateway(MessagePublisher::class);
 
-        $publisher->asyncPublish(
+        $publisher->publishDeferred(
             BatchMessage::constructEmpty()
                 ->append('expiring order', [MessageHeaders::TIME_TO_LIVE => 100])
                 ->append('kept order')
@@ -235,6 +236,74 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         );
     }
 
+    public function test_batch_publishing_without_non_blocking_confirmation_delivers_batch_and_confirms_before_returning(): void
+    {
+        $queueName = Uuid::v7()->toRfc4122();
+        $messaging = $this->bootstrapPublisherWithVerificationChannel(
+            $queueName,
+            publisherConfigurator: fn (AmqpMessagePublisherConfiguration $configuration): AmqpMessagePublisherConfiguration => $configuration->withHighThroughputPublishing(nonBlockingConfirmation: false),
+        );
+        $publisher = $messaging->getGateway(MessagePublisher::class);
+
+        $publisher->convertAndSend(
+            BatchMessage::constructEmpty()
+                ->append('first order')
+                ->append('second order')
+        );
+
+        $verificationChannel = $messaging->getMessageChannel('verificationChannel');
+        $receivedPayloads = [
+            $verificationChannel->receive()->getPayload(),
+            $verificationChannel->receive()->getPayload(),
+        ];
+        sort($receivedPayloads);
+        $this->assertSame(['first order', 'second order'], $receivedPayloads);
+    }
+
+    public function test_batch_publishing_without_non_blocking_confirmation_does_not_offer_publish_deferred(): void
+    {
+        $queueName = Uuid::v7()->toRfc4122();
+        $messaging = $this->bootstrapPublisherWithVerificationChannel(
+            $queueName,
+            publisherConfigurator: fn (AmqpMessagePublisherConfiguration $configuration): AmqpMessagePublisherConfiguration => $configuration->withHighThroughputPublishing(nonBlockingConfirmation: false),
+        );
+
+        $this->expectException(PublishingFailedException::class);
+        $this->expectExceptionMessageMatches('/not configured for non blocking confirmation/');
+
+        $messaging->getGateway(MessagePublisher::class)->publishDeferred('order that must not be published');
+    }
+
+    public function test_non_blocking_confirmation_without_batch_publishing_rejects_batch_message(): void
+    {
+        $queueName = Uuid::v7()->toRfc4122();
+        $messaging = $this->bootstrapPublisherWithVerificationChannel(
+            $queueName,
+            publisherConfigurator: fn (AmqpMessagePublisherConfiguration $configuration): AmqpMessagePublisherConfiguration => $configuration->withHighThroughputPublishing(batchPublishing: false),
+        );
+
+        $this->expectException(ConfigurationException::class);
+        $this->expectExceptionMessageMatches('/requires batch publishing to be enabled/');
+
+        $messaging->getGateway(MessagePublisher::class)->convertAndSend(
+            BatchMessage::constructEmpty()->append('first order')
+        );
+    }
+
+    public function test_non_blocking_confirmation_without_batch_publishing_still_defers_single_message_confirmation(): void
+    {
+        $queueName = Uuid::v7()->toRfc4122();
+        $messaging = $this->bootstrapPublisherWithVerificationChannel(
+            $queueName,
+            publisherConfigurator: fn (AmqpMessagePublisherConfiguration $configuration): AmqpMessagePublisherConfiguration => $configuration->withHighThroughputPublishing(batchPublishing: false),
+        );
+
+        $future = $messaging->getGateway(MessagePublisher::class)->publishDeferred('single order');
+
+        $this->assertNull($future->resolve());
+        $this->assertSame('single order', $messaging->getMessageChannel('verificationChannel')->receive()->getPayload());
+    }
+
     private function createOrderService(string $channelName): object
     {
         return new class ($channelName) {
@@ -268,8 +337,14 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
         };
     }
 
-    private function bootstrapPublisherWithVerificationChannel(string $queueName, ?object $commandHandler = null): FlowTestSupport
+    private function bootstrapPublisherWithVerificationChannel(string $queueName, ?object $commandHandler = null, ?callable $publisherConfigurator = null): FlowTestSupport
     {
+        $publisherConfiguration = AmqpMessagePublisherConfiguration::create()
+            ->withDefaultRoutingKey($queueName);
+        $publisherConfiguration = $publisherConfigurator === null
+            ? $publisherConfiguration->withHighThroughputPublishing()
+            : $publisherConfigurator($publisherConfiguration);
+
         return EcotoneLite::bootstrapFlowTesting(
             $commandHandler === null ? [] : [$commandHandler::class],
             $commandHandler === null
@@ -278,9 +353,7 @@ final class AsyncPublishingTest extends AmqpMessagingTestCase
             ServiceConfiguration::createWithDefaults()
                 ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::ASYNCHRONOUS_PACKAGE, ModulePackageList::AMQP_PACKAGE]))
                 ->withExtensionObjects([
-                    AmqpMessagePublisherConfiguration::create()
-                        ->withDefaultRoutingKey($queueName)
-                        ->withAsyncPublishing(),
+                    $publisherConfiguration,
                     AmqpBackedMessageChannelBuilder::create('verificationChannel', queueName: $queueName),
                 ]),
             licenceKey: LicenceTesting::VALID_LICENCE,
