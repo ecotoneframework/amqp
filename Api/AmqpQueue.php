@@ -2,16 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Ecotone\Amqp;
+namespace Ecotone\Api\Amqp;
 
 use Ecotone\Messaging\Support\Assert;
 use Interop\Amqp\Impl\AmqpQueue as EnqueueQueue;
 
-/**
- * Class AmqpQueue
- * @package Ecotone\Amqp
- * @author Dariusz Gafka <support@simplycodedsoftware.com>
- */
 /**
  * licence Apache-2.0
  */
@@ -25,27 +20,16 @@ class AmqpQueue
     private ?string $withDeadLetterRoutingKey = null;
     private bool $isStream = false;
 
-    /**
-     * AmqpQueue constructor.
-     * @param string $queueName
-     */
     private function __construct(string $queueName)
     {
         $this->enqueueQueue = new EnqueueQueue($queueName);
     }
 
-    /**
-     * @return string
-     */
     public function getQueueName(): string
     {
         return $this->enqueueQueue->getQueueName();
     }
 
-    /**
-     * @param string $queueName
-     * @return AmqpQueue
-     */
     public static function createWith(string $queueName): self
     {
         return new self($queueName);
@@ -61,9 +45,6 @@ class AmqpQueue
         return $self;
     }
 
-    /**
-     * @return EnqueueQueue
-     */
     public function toEnqueueQueue(): EnqueueQueue
     {
         $amqpQueue = clone $this->enqueueQueue;
@@ -81,7 +62,7 @@ class AmqpQueue
         return $amqpQueue;
     }
 
-    public function withDeadLetterExchangeTarget(AmqpExchange $amqpExchange, ?string $routingKey = null): self
+    public function setDeadLetterExchangeTarget(AmqpExchange $amqpExchange, ?string $routingKey = null): self
     {
         $this->withDeadLetterExchange = $amqpExchange->getExchangeName();
         $this->withDeadLetterRoutingKey = $routingKey;
@@ -89,7 +70,7 @@ class AmqpQueue
         return $this;
     }
 
-    public function withDeadLetterForDefaultExchange(AmqpQueue $amqpQueue): self
+    public function setDeadLetterForDefaultExchange(AmqpQueue $amqpQueue): self
     {
         $this->withDeadLetterExchange = '';
         $this->withDeadLetterRoutingKey = $amqpQueue->getQueueName();
@@ -97,13 +78,7 @@ class AmqpQueue
         return $this;
     }
 
-    /**
-     * the queue will survive a broker restart
-     *
-     * @param bool $isDurable
-     * @return AmqpQueue
-     */
-    public function withDurability(bool $isDurable): self
+    public function setDurability(bool $isDurable): self
     {
         Assert::isFalse($this->isStream, "Can't change durability for stream queue. It's always true.");
         $this->withDurability = $isDurable;
@@ -111,12 +86,7 @@ class AmqpQueue
         return $this;
     }
 
-    /**
-     * used by only one connection and the queue will be deleted when that connection closes
-     *
-     * @return AmqpQueue
-     */
-    public function withExclusivity(): self
+    public function setExclusivity(): self
     {
         Assert::isFalse($this->isStream, "Can't change exclusivity for stream queue. It's always false.");
         $this->enqueueQueue->addFlag(EnqueueQueue::FLAG_EXCLUSIVE);
@@ -124,12 +94,7 @@ class AmqpQueue
         return $this;
     }
 
-    /**
-     * queue that has had at least one consumer is deleted when last consumer unsubscribes
-     *
-     * @return AmqpQueue
-     */
-    public function withAutoDeletion(): self
+    public function setAutoDeletion(): self
     {
         Assert::isFalse($this->isStream, "Can't change auto delete for stream queue. It's always false.");
         $this->enqueueQueue->addFlag(EnqueueQueue::FLAG_AUTODELETE);
@@ -138,13 +103,9 @@ class AmqpQueue
     }
 
     /**
-     * optional, used by plugins and broker-specific features such as message TTL, queue length limit, etc
-     *
-     * @param string $name
      * @param $value
-     * @return AmqpQueue
      */
-    public function withArgument(string $name, $value): self
+    public function setArgument(string $name, $value): self
     {
         $this->enqueueQueue->setArgument($name, $value);
 
