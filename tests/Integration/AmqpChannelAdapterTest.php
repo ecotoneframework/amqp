@@ -18,7 +18,6 @@ use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
 use Ecotone\Api\ExtensionObject\MediaType;
 use Ecotone\Api\ExtensionObject\ModulePackageList;
 use Ecotone\Api\ExtensionObject\PollingMetadata;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
 use Ecotone\Api\ExtensionObject\SimpleMessageChannelBuilder;
 use Ecotone\Api\Lite\Test\FlowTestSupport;
 use Ecotone\Api\Messaging\Message;
@@ -28,6 +27,7 @@ use Ecotone\Api\Messaging\PollableChannel;
 use Ecotone\Enqueue\EnqueueMessageChannel;
 use Ecotone\Messaging\Channel\DirectChannel;
 use Ecotone\Messaging\Channel\QueueChannel;
+use Ecotone\Messaging\Config\BootstrapConfiguration;
 use Ecotone\Messaging\Config\Container\Definition;
 use Ecotone\Messaging\Conversion\ConversionException;
 use Ecotone\Messaging\Conversion\ObjectToSerialized\SerializingConverter;
@@ -35,8 +35,9 @@ use Ecotone\Messaging\Endpoint\AcknowledgementCallback;
 use Ecotone\Messaging\Handler\ChannelResolver;
 use Ecotone\Messaging\Handler\ReferenceSearchService;
 use Ecotone\Messaging\MessagingException;
-use Ecotone\Messaging\Support\MessageBuilder;
+use Ecotone\Test\ChannelTestSupport;
 use Ecotone\Test\ComponentTestBuilder;
+use Ecotone\Test\StaticMessageBuilder;
 use Exception;
 use RuntimeException;
 use stdClass;
@@ -78,7 +79,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $requestChannelName = 'requestChannel';
         $inboundRequestChannel = QueueChannel::create();
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload('some')->build();
+        $messageToSend = StaticMessageBuilder::withPayload('some')->build();
         $converters = [];
 
         $this->send(
@@ -117,7 +118,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $channelWithException->subscribe(ExceptionalMessageHandler::create());
         $successChannel = QueueChannel::create();
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload('some')->build();
+        $messageToSend = StaticMessageBuilder::withPayload('some')->build();
         $converters = [];
 
         $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
@@ -163,7 +164,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $inboundRequestChannel = DirectChannel::create();
         $inboundRequestChannel->subscribe(ExceptionalMessageHandler::create());
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload('some')->build();
+        $messageToSend = StaticMessageBuilder::withPayload('some')->build();
         $converters = [];
         $errorChannel = QueueChannel::create();
 
@@ -204,7 +205,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
     private function prepareMessaging(string $amqpConnectionReferenceName, array $amqpExchanges, array $amqpQueues, array $amqpBindings, array $converters): ComponentTestBuilder
     {
         $builder = ComponentTestBuilder::create(
-            configuration: ServiceConfiguration::createWithDefaults()->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
+            configuration: BootstrapConfiguration::createWithDefaults()->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
                 ->withExtensionObjects(array_merge(
                     $amqpExchanges,
                     $amqpQueues,
@@ -231,17 +232,18 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
      */
     private function send(ComponentTestBuilder $componentTestBuilder, AmqpOutboundChannelAdapterBuilder $outboundAmqpGatewayBuilder, Message $messageToSend)
     {
-        $componentTestBuilder
-            ->withMessageHandler(
-                $outboundAmqpGatewayBuilder
-                    ->withInputChannelName($inputChannelName = 'inputChannel')
-                    ->withAutoDeclareOnSend(true)
-            )
-            ->build()
-            ->sendMessageDirectToChannel(
-                $inputChannelName,
-                $messageToSend
-            );
+        ChannelTestSupport::of(
+            $componentTestBuilder
+                ->withMessageHandler(
+                    $outboundAmqpGatewayBuilder
+                        ->withInputChannelName($inputChannelName = 'inputChannel')
+                        ->withAutoDeclareOnSend(true)
+                )
+                ->build()
+        )->sendMessageDirectToChannel(
+            $inputChannelName,
+            $messageToSend
+        );
     }
 
     /**
@@ -315,7 +317,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $requestChannelName = 'requestChannel';
         $inboundRequestChannel = QueueChannel::create();
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload(new stdClass())->build();
+        $messageToSend = StaticMessageBuilder::withPayload(new stdClass())->build();
         $converters = [];
 
         $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName);
@@ -344,7 +346,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
         $payload = new stdClass();
         $payload->name = 'someName';
-        $messageToSend = MessageBuilder::withPayload($payload)
+        $messageToSend = StaticMessageBuilder::withPayload($payload)
             ->setContentType(MediaType::createApplicationXPHP())
             ->build();
         $converters = [new Definition(SerializingConverter::class)];
@@ -420,7 +422,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $this->send(
             $this->prepareMessaging($amqpConnectionReferenceName, [], $amqpQueues, [], $converters),
             $outboundAmqpGatewayBuilder,
-            MessageBuilder::withPayload('some')
+            StaticMessageBuilder::withPayload('some')
                 ->setHeader('routingKey', $blackQueueName)
                 ->build()
         );
@@ -461,7 +463,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $this->send(
             $this->prepareMessaging($amqpConnectionReferenceName, $amqpExchanges, $amqpQueues, $amqpBindings, $converters),
             $outboundAmqpGatewayBuilder,
-            MessageBuilder::withPayload('some')
+            StaticMessageBuilder::withPayload('some')
                 ->setHeader('exchangeKey', $exchangeName)
                 ->build()
         );
@@ -493,7 +495,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
         $converters = [];
 
-        $messageToSend = MessageBuilder::withPayload('some')
+        $messageToSend = StaticMessageBuilder::withPayload('some')
             ->setHeader('token', '123')
             ->setHeader('userId', 2)
             ->setHeader('userName', 'Johny')
@@ -535,7 +537,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $requestChannelName = 'requestChannel';
         $inboundRequestChannel = DirectChannel::create();
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload('some')->build();
+        $messageToSend = StaticMessageBuilder::withPayload('some')->build();
         $converters = [];
 
         $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
@@ -581,7 +583,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $requestChannelName = 'requestChannel';
         $inboundRequestChannel = DirectChannel::create();
         $amqpConnectionReferenceName = AmqpConnectionFactory::class;
-        $messageToSend = MessageBuilder::withPayload('some')->build();
+        $messageToSend = StaticMessageBuilder::withPayload('some')->build();
         $converters = [];
 
         $outboundAmqpGatewayBuilder = AmqpOutboundChannelAdapterBuilder::createForDefaultExchange($amqpConnectionReferenceName)
@@ -618,17 +620,14 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
             [
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
-                ->withExtensionObjects([
-                    AmqpBackedMessageChannelBuilder::create($queueName),
-                ])
+            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE],
         );
 
         /** @var PollableChannel $messageChannel */
-        $messageChannel = $ecotoneLite->getMessageChannelByName($queueName);
+        $messageChannel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($queueName);
         $messageChannel->send(
-            MessageBuilder::withPayload('some')
+            StaticMessageBuilder::withPayload('some')
                 ->setHeader(MessageHeaders::DELIVERY_DELAY, 1000)
                 ->build()
         );
@@ -652,17 +651,14 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
                 new AmqpConsumerExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
-                ->withExtensionObjects([
-                    AmqpMessageConsumerConfiguration::create($normalQueueEndpointId, $queueName),
-                    AmqpMessageConsumerConfiguration::create($deadLetterQueueEndpointId, $deadLetterQueueName),
-                    AmqpQueue::createWith($queueName)
-                        ->setDeadLetterForDefaultExchange($deadLetterQueue),
-                    $deadLetterQueue,
-                    AmqpMessagePublisherConfiguration::create()
-                        ->withDefaultRoutingKey($queueName),
-                ])
+            extensionObjects: [
+                AmqpMessageConsumerConfiguration::create($normalQueueEndpointId, $queueName),
+                AmqpMessageConsumerConfiguration::create($deadLetterQueueEndpointId, $deadLetterQueueName),
+                AmqpQueue::createWith($queueName)->setDeadLetterForDefaultExchange($deadLetterQueue),
+                $deadLetterQueue,
+                AmqpMessagePublisherConfiguration::create()->withDefaultRoutingKey($queueName),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE],
         );
 
         $payload = 'random_payload';
@@ -684,7 +680,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
 
         $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
-        $amqpBackedMessageChannel->send(MessageBuilder::withPayload('some')->build());
+        $amqpBackedMessageChannel->send(StaticMessageBuilder::withPayload('some')->build());
 
         /** @var Message $message */
         $message = $amqpBackedMessageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(1000));
@@ -701,7 +697,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
 
         $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
-        $amqpBackedMessageChannel->send(MessageBuilder::withPayload('some')->build());
+        $amqpBackedMessageChannel->send(StaticMessageBuilder::withPayload('some')->build());
 
         /** @var Message $message */
         $message = $amqpBackedMessageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(1000));
@@ -722,7 +718,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
 
         $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
-        $amqpBackedMessageChannel->send(MessageBuilder::withPayload('some')->build());
+        $amqpBackedMessageChannel->send(StaticMessageBuilder::withPayload('some')->build());
 
         /** @var Message $message */
         $message = $amqpBackedMessageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(1000));
@@ -739,7 +735,7 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
 
         $amqpBackedMessageChannel = $this->createDirectAmqpBackendMessageChannel($queueName);
-        $amqpBackedMessageChannel->send(MessageBuilder::withPayload('some')->build());
+        $amqpBackedMessageChannel->send(StaticMessageBuilder::withPayload('some')->build());
 
         /** @var Message $message */
         $message = $amqpBackedMessageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(1000));
@@ -762,18 +758,14 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
         $ecotoneLite = $this->bootstrapFlowTesting(
             [],
             array_merge($this->getConnectionFactoryReferences(), ['customDelayStrategy' => $customDelayStrategy]),
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
-                ->withExtensionObjects([
-                    AmqpBackedMessageChannelBuilder::create($queueName)
-                        ->withDelayStrategy('customDelayStrategy'),
-                ])
+            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)->withDelayStrategy('customDelayStrategy')],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE],
         );
 
         /** @var PollableChannel $messageChannel */
-        $messageChannel = $ecotoneLite->getMessageChannelByName($queueName);
+        $messageChannel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($queueName);
         $messageChannel->send(
-            MessageBuilder::withPayload('some')
+            StaticMessageBuilder::withPayload('some')
                 ->setHeader(MessageHeaders::DELIVERY_DELAY, 10)
                 ->build()
         );
@@ -797,10 +789,11 @@ final class AmqpChannelAdapterTest extends AmqpMessagingTestCase
             []
         );
 
-        return $messaging
-            ->withChannel(AmqpBackedMessageChannelBuilder::create($queueName, $amqpConnectionReferenceName))
-            ->build()
-            ->getMessageChannel($queueName);
+        return ChannelTestSupport::of(
+            $messaging
+                ->withChannel(AmqpBackedMessageChannelBuilder::create($queueName, $amqpConnectionReferenceName))
+                ->build()
+        )->getMessageChannel($queueName);
     }
 
     private function acceptMessage(Message $message): void

@@ -16,8 +16,9 @@ use Ecotone\Api\ExtensionObject\ModulePackageList;
 use Ecotone\Api\ExtensionObject\ServiceConfiguration;
 use Ecotone\Api\ExtensionObject\TestConfiguration;
 use Ecotone\Messaging\Support\LicensingException;
-use Ecotone\Messaging\Support\MessageBuilder;
+use Ecotone\Test\ChannelTestSupport;
 use Ecotone\Test\LicenceTesting;
+use Ecotone\Test\StaticMessageBuilder;
 use Symfony\Component\Uid\Uuid;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
@@ -62,17 +63,11 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue('test_queue'),
-                    AmqpStreamChannelBuilder::create(
-                        'test_channel',
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: 'test_queue',
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue('test_queue'),
+                AmqpStreamChannelBuilder::create('test_channel', 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:'test_queue', ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
         );
     }
 
@@ -87,18 +82,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send three messages to the stream
@@ -131,18 +120,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'last',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'last', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send three messages to the stream
@@ -178,18 +161,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        '1',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ), // Start from second message (0-indexed)
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, '1', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send three messages to the stream
@@ -225,18 +202,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'next',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'next', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Try to consume from empty stream with 'next' offset - should timeout gracefully
@@ -272,18 +243,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Try to consume from empty stream with 'first' offset - should timeout gracefully
@@ -310,18 +275,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 50 messages to test drain loop efficiency
@@ -355,18 +314,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'next',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'next', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send messages before consumer starts
@@ -397,18 +350,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send only one message
@@ -431,18 +378,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        '100', // Offset beyond stream end
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, '100', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send only 3 messages
@@ -474,18 +415,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send messages in specific order
@@ -514,18 +449,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        '0', // Start from first message (offset 0)
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, '0', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send messages
@@ -552,18 +481,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send messages
@@ -595,18 +518,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send messages
@@ -639,18 +556,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send a message that will fail on first attempt
@@ -680,18 +591,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 3 messages: success, fail, success
@@ -725,18 +630,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 10 messages, with message 5 failing
@@ -775,19 +674,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        $channelName,
-                        'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )->withFinalFailureStrategy(FinalFailureStrategy::RESEND),
-                    InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RESEND),
+                InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 3 messages: success, fail, success
@@ -822,19 +715,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withPrefetchCount(1), // Set prefetch to 1
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(1),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send first batch of 10 messages
@@ -894,22 +780,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                        messageGroupId: $messageGroupId = Uuid::v7()->toRfc4122(),
-                    )
-                        ->withPrefetchCount(2)
-                        ->withCommitInterval(2), // Commit every 2 messages,
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, messageGroupId:$messageGroupId = Uuid::v7()->toRfc4122(), )->withPrefetchCount(2)->withCommitInterval(2),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 5 messages
@@ -947,21 +824,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withPrefetchCount(1)
-                        ->withCommitInterval(2), // Commit every 2 messages,
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(1)->withCommitInterval(2),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 5 messages
@@ -999,20 +868,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withCommitInterval(3), // Commit every 3 messages,
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withCommitInterval(3),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 5 messages
@@ -1068,21 +930,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withPrefetchCount(10)
-                        ->withCommitInterval(100), // Large commit interval, should be overridden to 1
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(10)->withCommitInterval(100),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 5 messages
@@ -1118,21 +972,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withPrefetchCount(10)
-                        ->withCommitInterval(100), // Large commit interval, should be overridden to 1
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(10)->withCommitInterval(100),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 5 messages
@@ -1201,27 +1047,20 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    )
-                        ->withCommitInterval(1), // Commit after each message
-                ]),
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withCommitInterval(1),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE],
             testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send 3 messages to the stream
-        $channel = $ecotoneLite->getMessageChannelByName($channelName);
-        $channel->send(MessageBuilder::withPayload('message1')->build());
-        $channel->send(MessageBuilder::withPayload('message2')->build());
-        $channel->send(MessageBuilder::withPayload('message3')->build());
+        $channel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($channelName);
+        $channel->send(StaticMessageBuilder::withPayload('message1')->build());
+        $channel->send(StaticMessageBuilder::withPayload('message2')->build());
+        $channel->send(StaticMessageBuilder::withPayload('message3')->build());
 
         // Consumer1 consumes first message
         $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
@@ -1312,21 +1151,14 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withServiceName('publisher-service')
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                    \Ecotone\Api\ExtensionObject\DistributedServiceMap::initialize()
-                        ->withEventMapping(channelName: $channelName, subscriptionKeys: ['*']),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+                \Ecotone\Api\ExtensionObject\DistributedServiceMap::initialize()->withEventMapping(channelName:$channelName, subscriptionKeys:['*']),
+                ServiceConfiguration::createWithDefaults()->withServiceName('publisher-service'),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Consumer service 1
@@ -1337,19 +1169,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withServiceName('service1')
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+                ServiceConfiguration::createWithDefaults()->withServiceName('service1'),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Consumer service 2
@@ -1360,19 +1186,13 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withServiceName('service2')
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+                ServiceConfiguration::createWithDefaults()->withServiceName('service2'),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Publish events
@@ -1399,21 +1219,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName)
-                        ->setArgument('x-max-age', '7D')
-                        ->setArgument('x-max-length-bytes', 1073741824)
-                        ->setArgument('x-stream-max-segment-size-bytes', 52428800),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName)->setArgument('x-max-age', '7D')->setArgument('x-max-length-bytes', 1073741824)->setArgument('x-stream-max-segment-size-bytes', 52428800),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send a message to trigger queue creation
@@ -1451,21 +1262,12 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            ServiceConfiguration::createWithDefaults()
-                ->withEnabledModulePackageNames([ModulePackageList::AMQP_PACKAGE, ])
-                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
-                ->withExtensionObjects([
-                    AmqpQueue::createStreamQueue($queueName)
-                        ->setArgument('x-max-age', '14D')
-                        ->setArgument('x-max-length-bytes', 2147483648)
-                        ->setArgument('x-stream-max-segment-size-bytes', 104857600),
-                    AmqpStreamChannelBuilder::create(
-                        channelName: $channelName,
-                        startPosition: 'first',
-                        amqpConnectionReferenceName: AmqpLibConnection::class,
-                        queueName: $queueName,
-                    ),
-                ])
+            extensionObjects: [
+                AmqpQueue::createStreamQueue($queueName)->setArgument('x-max-age', '14D')->setArgument('x-max-length-bytes', 2147483648)->setArgument('x-stream-max-segment-size-bytes', 104857600),
+                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ],
+            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            licenceKey: LicenceTesting::VALID_LICENCE,
         );
 
         // Send a message to trigger queue creation
