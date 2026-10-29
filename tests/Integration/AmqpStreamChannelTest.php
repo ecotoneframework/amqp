@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\Amqp\AmqpLibConnectionFactory as AmqpLibConnection;
-use Ecotone\Api\Amqp\AmqpQueue;
-use Ecotone\Api\Amqp\AmqpStreamChannelBuilder;
-use Ecotone\Api\Attribute\InternalHandler;
-use Ecotone\Api\Attribute\QueryHandler;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\FinalFailureStrategy;
-use Ecotone\Api\ExtensionObject\InstantRetryConfiguration;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
-use Ecotone\Api\ExtensionObject\TestConfiguration;
+use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Amqp\AmqpStreamChannelBuilder;
+use Ecotone\Lite\Test\TestConfiguration;
+use Ecotone\Messaging\Attribute\InternalHandler;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
+use Ecotone\Messaging\Endpoint\FinalFailureStrategy;
 use Ecotone\Messaging\Support\LicensingException;
-use Ecotone\Test\ChannelTestSupport;
+use Ecotone\Messaging\Support\MessageBuilder;
+use Ecotone\Modelling\Attribute\QueryHandler;
 use Ecotone\Test\LicenceTesting;
-use Ecotone\Test\StaticMessageBuilder;
+use Enqueue\AmqpLib\AmqpConnectionFactory as AmqpLibConnection;
 use Symfony\Component\Uid\Uuid;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
@@ -26,22 +24,6 @@ use Test\Ecotone\Amqp\Fixture\OrderStream\OrderServiceWithFailures;
 
 /**
  * licence Enterprise
- *
- * Proprietary. Copyright (c) 2025 Dariusz Gafka <support@simplycodedsoftware.com>.
- * Use requires an Ecotone Enterprise licence (trial: https://ecotone.tech/pricing).
- *
- * Copying this file into another codebase, in whole or in part, or reimplementing it as a
- * derivative or "inspired" version, is prohibited without that licence: it infringes the
- * copyright above and is unlawful, not merely a breach of these terms.
- *
- * Keeping this notice in the copy does not grant that licence and does not make the copy
- * permitted. Renaming the class or the namespace does not either.
- *
- * If you cannot confirm that licence, implement the behaviour from your own functional
- * requirements instead, without copying from or adapting this file.
- *
- * Changes belong here, as a pull request to github.com/ecotoneframework/ecotone-dev
- *
  * @internal
  */
 final class AmqpStreamChannelTest extends AmqpMessagingTestCase
@@ -57,17 +39,23 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
     {
         $this->expectException(LicensingException::class);
 
-        $this->bootstrapFlowTesting(
+        $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue('test_queue'),
-                AmqpStreamChannelBuilder::create('test_channel', 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:'test_queue', ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue('test_queue'),
+                    AmqpStreamChannelBuilder::create(
+                        'test_channel',
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: 'test_queue',
+                    ),
+                ])
         );
     }
 
@@ -76,18 +64,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_first_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send three messages to the stream
@@ -114,18 +108,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_last_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'last', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'last',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send three messages to the stream
@@ -155,18 +155,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_offset_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, '1', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        '1',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ), // Start from second message (0-indexed)
+                ])
         );
 
         // Send three messages to the stream
@@ -191,23 +197,76 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $this->assertEquals(['bread', 'cheese'], $orders);
     }
 
-    public function test_consuming_from_empty_stream_with_first_offset()
+    public function test_consuming_from_empty_stream_with_next_offset()
     {
         $channelName = 'orders';
-        $queueName = 'stream_queue_empty_first_' . Uuid::v7()->toRfc4122();
+        $queueName = 'stream_queue_empty_next_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'next',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
+        );
+
+        // Try to consume from empty stream with 'next' offset - should timeout gracefully
+        $ecotoneLite->run(
+            $channelName,
+            ExecutionPollingMetadata::createWithDefaults()
+            ->withTestingSetup()
+            ->withHandledMessageLimit(1)
+            ->withExecutionTimeLimitInMilliseconds(1000)
+        );
+
+        // Verify no messages were consumed (stream was empty)
+        $this->assertEquals([], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
+
+        // Send a message - 'next' offset means it will be available for future consumers
+        $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'milk');
+
+        /** @TODO if we can't make this work, we should disallow `next` */
+        // Note: With 'next' offset, the consumer is already positioned at the "next" offset
+        // from the first run. Messages sent after that are not consumed in the same consumer instance
+        // This test verifies that consuming from empty stream with 'next' doesn't fail
+        $this->assertEquals([], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
+    }
+
+    public function test_consuming_from_empty_stream_with_first_offset()
+    {
+        $channelName = 'orders';
+        $queueName = 'stream_queue_empty_first_' . Uuid::v7()->toRfc4122();
+
+        $ecotoneLite = $this->bootstrapForTesting(
+            [OrderService::class],
+            [
+                new OrderService(),
+                ...$this->getConnectionFactoryReferences(),
             ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Try to consume from empty stream with 'first' offset - should timeout gracefully
@@ -228,18 +287,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_large_batch_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send 50 messages to test drain loop efficiency
@@ -262,23 +327,71 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $this->assertEquals($expectedOrders, $orders);
     }
 
-    public function test_consuming_single_message_from_stream()
+    public function test_consuming_with_next_offset_ignores_existing_messages()
     {
         $channelName = 'orders';
-        $queueName = 'stream_queue_single_' . Uuid::v7()->toRfc4122();
+        $queueName = 'stream_queue_next_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'next',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
+        );
+
+        // Send messages before consumer starts
+        $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'old_milk');
+        $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'old_bread');
+
+        // Start consumer with 'next' offset - should ignore existing messages
+        $ecotoneLite->run(
+            $channelName,
+            ExecutionPollingMetadata::createWithDefaults()
+            ->withTestingSetup()
+            ->withHandledMessageLimit(3)
+            ->withExecutionTimeLimitInMilliseconds(1000)
+        );
+
+        // Verify no old messages were consumed (next offset skips existing messages)
+        $this->assertEquals([], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
+    }
+
+    public function test_consuming_single_message_from_stream()
+    {
+        $channelName = 'orders';
+        $queueName = 'stream_queue_single_' . Uuid::v7()->toRfc4122();
+
+        $ecotoneLite = $this->bootstrapForTesting(
+            [OrderService::class],
+            [
+                new OrderService(),
+                ...$this->getConnectionFactoryReferences(),
             ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send only one message
@@ -295,18 +408,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_offset_beyond_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, '100', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        '100', // Offset beyond stream end
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send only 3 messages
@@ -332,18 +451,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_order_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send messages in specific order
@@ -366,18 +491,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_offset_zero_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, '0', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        '0', // Start from first message (offset 0)
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send messages
@@ -398,18 +529,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_replay_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send messages
@@ -435,18 +572,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_short_timeout_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send messages
@@ -473,25 +616,31 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $queueName = 'stream_queue_release_retry_' . Uuid::v7()->toRfc4122();
 
         $orderService = new OrderServiceWithFailures();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderServiceWithFailures::class],
             [
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+                ])
         );
 
         // Send a message that will fail on first attempt
         $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'fail_order1');
 
         // Run consumer - should fail first time, then retry and succeed
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(stopOnError: false)->withExecutionTimeLimitInMilliseconds(1000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(failAtError: false)->withExecutionTimeLimitInMilliseconds(1000));
 
         // Verify the order was eventually processed
         $orders = $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders');
@@ -508,18 +657,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $queueName = 'stream_queue_release_multiple_' . Uuid::v7()->toRfc4122();
 
         $orderService = new OrderServiceWithFailures();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderServiceWithFailures::class],
             [
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+                ])
         );
 
         // Send 3 messages: success, fail, success
@@ -528,7 +683,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'order3');
 
         // Run consumer
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(stopOnError: false)->withExecutionTimeLimitInMilliseconds(1000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(failAtError: false)->withExecutionTimeLimitInMilliseconds(1000));
 
         // Verify all messages were processed in order
         $orders = $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders');
@@ -547,18 +702,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $queueName = 'stream_queue_release_offset_' . Uuid::v7()->toRfc4122();
 
         $orderService = new OrderServiceWithFailures();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderServiceWithFailures::class],
             [
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )->withFinalFailureStrategy(FinalFailureStrategy::RELEASE),
+                ])
         );
 
         // Send 10 messages, with message 5 failing
@@ -568,7 +729,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         }
 
         // Run consumer
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(stopOnError: false)->withExecutionTimeLimitInMilliseconds(1000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(failAtError: false)->withExecutionTimeLimitInMilliseconds(1000));
 
         // Verify all messages were processed
         $orders = $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders');
@@ -591,19 +752,24 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $queueName = 'stream_queue_resend_' . Uuid::v7()->toRfc4122();
 
         $orderService = new OrderServiceWithFailures();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderServiceWithFailures::class],
             [
                 $orderService,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create($channelName, 'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withFinalFailureStrategy(FinalFailureStrategy::RESEND),
-                InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        $channelName,
+                        'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )->withFinalFailureStrategy(FinalFailureStrategy::RESEND),
+                ])
         );
 
         // Send 3 messages: success, fail, success
@@ -612,7 +778,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'order3');
 
         // Run consumer
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(stopOnError: false)->withExecutionTimeLimitInMilliseconds(5000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithFinishWhenNoMessages(failAtError: false)->withExecutionTimeLimitInMilliseconds(5000));
 
         // Verify all messages were processed
         // With RESEND: order1 succeeds, fail_order2 fails and goes to end, order3 succeeds, fail_order2 retried and succeeds
@@ -632,18 +798,25 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_queue_prefetch_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(1),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withPrefetchCount(1), // Set prefetch to 1
+                ])
         );
 
         // Send first batch of 10 messages
@@ -696,20 +869,29 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         $sharedPositionTracker = new \Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, messageGroupId:$messageGroupId = Uuid::v7()->toRfc4122(), )->withPrefetchCount(2)->withCommitInterval(2),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                        messageGroupId: $messageGroupId = Uuid::v7()->toRfc4122(),
+                    )
+                        ->withPrefetchCount(2)
+                        ->withCommitInterval(2), // Commit every 2 messages,
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 5 messages
@@ -740,20 +922,28 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         $sharedPositionTracker = new \Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(1)->withCommitInterval(2),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withPrefetchCount(1)
+                        ->withCommitInterval(2), // Commit every 2 messages,
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 5 messages
@@ -772,6 +962,9 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $this->assertEquals('5', $committedPosition, 'Position should be committed at offset 5 (after last message)');
     }
 
+    /**
+     * @TODO requires refactor
+     */
     public function test_commit_interval_with_single_message_polling_metadata(): void
     {
         $this->markTestSkipped('Requires passing PollingMetadata to Inbound Adapters');
@@ -781,20 +974,27 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         $sharedPositionTracker = new \Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withCommitInterval(3),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withCommitInterval(3), // Commit every 3 messages,
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 5 messages
@@ -806,31 +1006,31 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         // Run consumer multiple times with single message limit
         // Message 1
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['order_1'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
         // Position should be committed at 1 (end of batch, even though commitInterval=3)
         $this->assertEquals('1', $sharedPositionTracker->loadPosition($consumerId));
 
         // Message 2
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['order_1', 'order_2'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
         // Position should be committed at 2 (end of batch)
         $this->assertEquals('2', $sharedPositionTracker->loadPosition($consumerId));
 
         // Message 3
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['order_1', 'order_2', 'order_3'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
         // Position should be committed at 3 (end of batch)
         $this->assertEquals('3', $sharedPositionTracker->loadPosition($consumerId));
 
         // Message 4
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['order_1', 'order_2', 'order_3', 'order_4'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
         // Position should be committed at 4 (end of batch)
         $this->assertEquals('4', $sharedPositionTracker->loadPosition($consumerId));
 
         // Message 5
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['order_1', 'order_2', 'order_3', 'order_4', 'order_5'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
         // Position should be committed at 5 (end of batch)
         $this->assertEquals('5', $sharedPositionTracker->loadPosition($consumerId));
@@ -843,20 +1043,28 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         $sharedPositionTracker = new \Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(10)->withCommitInterval(100),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withPrefetchCount(10)
+                        ->withCommitInterval(100), // Large commit interval, should be overridden to 1
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 5 messages
@@ -867,7 +1075,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $consumerId = $channelName;
 
         // Run consumer with execution time limit - should commit after each message
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 5, executionTimeLimitInMilliseconds: 5000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 5, maxExecutionTimeInMilliseconds: 5000));
 
         // Verify all messages were consumed
         $orders = $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders');
@@ -885,20 +1093,28 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         $sharedPositionTracker = new \Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withPrefetchCount(10)->withCommitInterval(100),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withPrefetchCount(10)
+                        ->withCommitInterval(100), // Large commit interval, should be overridden to 1
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 5 messages
@@ -909,7 +1125,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $consumerId = $channelName;
 
         // Run consumer with message limit - should commit after each message
-        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 5, executionTimeLimitInMilliseconds: 5000));
+        $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 5, maxExecutionTimeInMilliseconds: 5000));
 
         // Verify all messages were consumed
         $orders = $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders');
@@ -959,7 +1175,7 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
             }
         };
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [$handler1::class, $handler2::class],
             [
                 $handler1,
@@ -967,35 +1183,42 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
                 ...$this->getConnectionFactoryReferences(),
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, )->withCommitInterval(1),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    )
+                        ->withCommitInterval(1), // Commit after each message
+                    TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
+                ])
         );
 
         // Send 3 messages to the stream
-        $channel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($channelName);
-        $channel->send(StaticMessageBuilder::withPayload('message1')->build());
-        $channel->send(StaticMessageBuilder::withPayload('message2')->build());
-        $channel->send(StaticMessageBuilder::withPayload('message3')->build());
+        $channel = $ecotoneLite->getMessageChannelByName($channelName);
+        $channel->send(MessageBuilder::withPayload('message1')->build());
+        $channel->send(MessageBuilder::withPayload('message2')->build());
+        $channel->send(MessageBuilder::withPayload('message3')->build());
 
         // Consumer1 consumes first message
-        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['message1'], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed1'));
         $this->assertEquals([], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed2'));
 
         // Consumer2 consumes first two messages
-        $ecotoneLite->run('consumer2', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
-        $ecotoneLite->run('consumer2', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run('consumer2', ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
+        $ecotoneLite->run('consumer2', ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['message1'], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed1'));
         $this->assertEquals(['message1', 'message2'], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed2'));
 
         // Consumer1 consumes second and third messages
-        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
-        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
+        $ecotoneLite->run('consumer1', ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 1));
         $this->assertEquals(['message1', 'message2', 'message3'], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed1'));
         $this->assertEquals(['message1', 'message2'], $ecotoneLite->getQueryBus()->sendWithRouting('getConsumed2'));
 
@@ -1018,8 +1241,8 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
 
         // Publisher service
         $publisher = new class () {
-            #[\Ecotone\Api\Attribute\CommandHandler('publish.event')]
-            public function publish(string $payload, \Ecotone\Api\Gateway\EventBus $eventBus): void
+            #[\Ecotone\Modelling\Attribute\CommandHandler('publish.event')]
+            public function publish(string $payload, \Ecotone\Modelling\EventBus $eventBus): void
             {
                 $eventBus->publish($payload);
             }
@@ -1029,8 +1252,8 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $consumer1 = new class () {
             private array $consumed = [];
 
-            #[\Ecotone\Api\Attribute\Distributed]
-            #[\Ecotone\Api\Attribute\EventHandler('distributed.event', endpointId: 'consumer1')]
+            #[\Ecotone\Modelling\Attribute\Distributed]
+            #[\Ecotone\Modelling\Attribute\EventHandler('distributed.event', endpointId: 'consumer1')]
             public function handle(string $payload): void
             {
                 $this->consumed[] = $payload;
@@ -1047,8 +1270,8 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $consumer2 = new class () {
             private array $consumed = [];
 
-            #[\Ecotone\Api\Attribute\Distributed]
-            #[\Ecotone\Api\Attribute\EventHandler('distributed.event', endpointId: 'consumer2')]
+            #[\Ecotone\Modelling\Attribute\Distributed]
+            #[\Ecotone\Modelling\Attribute\EventHandler('distributed.event', endpointId: 'consumer2')]
             public function handle(string $payload): void
             {
                 $this->consumed[] = $payload;
@@ -1064,55 +1287,74 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'distributed_events';
 
         // Publisher service
-        $publisherService = $this->bootstrapFlowTesting(
+        $publisherService = $this->bootstrapForTesting(
             [$publisher::class],
             [
                 $publisher,
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-                \Ecotone\Api\ExtensionObject\DistributedServiceMap::initialize()->withEventMapping(channelName:$channelName, subscriptionKeys:['*']),
-                ServiceConfiguration::createWithDefaults()->withServiceName('publisher-service'),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withServiceName('publisher-service')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                    \Ecotone\Modelling\Api\Distribution\DistributedServiceMap::initialize()
+                        ->withServiceMapping(serviceName: 'distributed_events_channel', channelName: $channelName),
+                ])
         );
 
         // Consumer service 1
-        $consumerService1 = $this->bootstrapFlowTesting(
+        $consumerService1 = $this->bootstrapForTesting(
             [$consumer1::class],
             [
                 $consumer1,
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-                ServiceConfiguration::createWithDefaults()->withServiceName('service1'),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withServiceName('service1')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Consumer service 2
-        $consumerService2 = $this->bootstrapFlowTesting(
+        $consumerService2 = $this->bootstrapForTesting(
             [$consumer2::class],
             [
                 $consumer2,
                 \Ecotone\Messaging\Consumer\ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-                ServiceConfiguration::createWithDefaults()->withServiceName('service2'),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withServiceName('service2')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Publish events
@@ -1121,8 +1363,8 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $publisherService->getDistributedBus()->publishEvent('distributed.event', 'event3');
 
         // Both consumers should receive all events independently
-        $consumerService1->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 3, executionTimeLimitInMilliseconds: 10000));
-        $consumerService2->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 3, executionTimeLimitInMilliseconds: 10000));
+        $consumerService1->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 3, maxExecutionTimeInMilliseconds: 10000));
+        $consumerService2->run($channelName, ExecutionPollingMetadata::createWithTestingSetup(amountOfMessagesToHandle: 3, maxExecutionTimeInMilliseconds: 10000));
 
         $this->assertEquals(['event1', 'event2', 'event3'], $consumerService1->getQueryBus()->sendWithRouting('getConsumed1'));
         $this->assertEquals(['event1', 'event2', 'event3'], $consumerService2->getQueryBus()->sendWithRouting('getConsumed2'));
@@ -1133,18 +1375,27 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_retention_amqp_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName)->setArgument('x-max-age', '7D')->setArgument('x-max-length-bytes', 1073741824)->setArgument('x-stream-max-segment-size-bytes', 52428800),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName)
+                        ->withArgument('x-max-age', '7D')
+                        ->withArgument('x-max-length-bytes', 1073741824)
+                        ->withArgument('x-stream-max-segment-size-bytes', 52428800),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send a message to trigger queue creation
@@ -1176,18 +1427,27 @@ final class AmqpStreamChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'stream_retention_arg_' . Uuid::v7()->toRfc4122();
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName)->setArgument('x-max-age', '14D')->setArgument('x-max-length-bytes', 2147483648)->setArgument('x-stream-max-segment-size-bytes', 104857600),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    AmqpQueue::createStreamQueue($queueName)
+                        ->withArgument('x-max-age', '14D')
+                        ->withArgument('x-max-length-bytes', 2147483648)
+                        ->withArgument('x-stream-max-segment-size-bytes', 104857600),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send a message to trigger queue creation

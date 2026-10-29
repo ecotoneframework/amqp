@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use Ecotone\Api\Amqp\AmqpConnectionReference;
 use Ecotone\Enqueue\CachedConnectionFactory;
 use Ecotone\Enqueue\EnqueueHeader;
 use Ecotone\Enqueue\EnqueueInboundChannelAdapterBuilder;
@@ -15,7 +14,7 @@ use Ecotone\Messaging\Config\Container\Reference;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Handler\Logger\LoggingGateway;
 use Ecotone\Messaging\MessageConverter\DefaultHeaderMapper;
-use Ecotone\Messaging\Support\MessageBuilder;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -28,7 +27,7 @@ use Symfony\Component\Uid\Uuid;
  */
 class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuilder
 {
-    public static function createWith(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName = AmqpConnectionReference::DEFAULT): self
+    public static function createWith(string $endpointId, string $queueName, ?string $requestChannelName, string $amqpConnectionReferenceName = AmqpConnectionFactory::class): self
     {
         return new self($queueName, $endpointId, $requestChannelName, $amqpConnectionReferenceName);
     }
@@ -47,7 +46,6 @@ class AmqpInboundChannelAdapterBuilder extends EnqueueInboundChannelAdapterBuild
             DefaultHeaderMapper::createWith($this->headerMapper, []),
             EnqueueHeader::HEADER_ACKNOWLEDGE,
             Reference::to(LoggingGateway::class),
-            Reference::to(MessageBuilder::class),
             $this->finalFailureStrategy,
         ]);
 

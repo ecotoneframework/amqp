@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Attribute\Asynchronous;
-use Ecotone\Api\Attribute\InternalHandler;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\FinalFailureStrategy;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\Messaging\Message;
-use Ecotone\Test\ChannelTestSupport;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Messaging\Attribute\Asynchronous;
+use Ecotone\Messaging\Attribute\ServiceActivator;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
+use Ecotone\Messaging\Endpoint\FinalFailureStrategy;
+use Ecotone\Messaging\Message;
 use Exception;
 
 /**
@@ -31,17 +31,19 @@ final class FinalFailureStrategyTest extends AmqpMessagingTestCase
                 [new FailingService()],
                 $this->getConnectionFactoryReferences()
             ),
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpBackedMessageChannelBuilder::create(channelName:'async')->withFinalFailureStrategy(FinalFailureStrategy::IGNORE)->withReceiveTimeout(100),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(channelName: 'async')
+                        ->withFinalFailureStrategy(FinalFailureStrategy::IGNORE)
+                        ->withReceiveTimeout(100),
+                ])
         );
 
         $ecotoneTestSupport->sendDirectToChannel('executionChannel', 'some');
-        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
 
-        $messageChannel = ChannelTestSupport::of($ecotoneTestSupport)->getMessageChannel('async');
+        $messageChannel = $ecotoneTestSupport->getMessageChannel('async');
         $this->assertNull($messageChannel->receive());
     }
 
@@ -53,18 +55,20 @@ final class FinalFailureStrategyTest extends AmqpMessagingTestCase
                 [new FailingService()],
                 $this->getConnectionFactoryReferences()
             ),
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpBackedMessageChannelBuilder::create(channelName:'async')->withFinalFailureStrategy(FinalFailureStrategy::RESEND)->withReceiveTimeout(100),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(channelName: 'async')
+                        ->withFinalFailureStrategy(FinalFailureStrategy::RESEND)
+                        ->withReceiveTimeout(100),
+                ])
         );
 
         $ecotoneTestSupport->sendDirectToChannel('executionChannel', 'some_1');
         $ecotoneTestSupport->sendDirectToChannel('executionChannel', 'some_2');
-        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
 
-        $messageChannel = ChannelTestSupport::of($ecotoneTestSupport)->getMessageChannel('async');
+        $messageChannel = $ecotoneTestSupport->getMessageChannel('async');
         $this->assertSame('some_2', $messageChannel->receive()->getPayload());
     }
 
@@ -76,18 +80,20 @@ final class FinalFailureStrategyTest extends AmqpMessagingTestCase
                 [new FailingService()],
                 $this->getConnectionFactoryReferences()
             ),
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpBackedMessageChannelBuilder::create(channelName:'async')->withFinalFailureStrategy(FinalFailureStrategy::RELEASE)->withReceiveTimeout(100),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(channelName: 'async')
+                        ->withFinalFailureStrategy(FinalFailureStrategy::RELEASE)
+                        ->withReceiveTimeout(100),
+                ])
         );
 
         $ecotoneTestSupport->sendDirectToChannel('executionChannel', 'some_1');
         $ecotoneTestSupport->sendDirectToChannel('executionChannel', 'some_2');
-        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneTestSupport->run('async', ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
 
-        $messageChannel = ChannelTestSupport::of($ecotoneTestSupport)->getMessageChannel('async');
+        $messageChannel = $ecotoneTestSupport->getMessageChannel('async');
         $this->assertSame('some_1', $messageChannel->receive()->getPayload());
     }
 }
@@ -98,7 +104,7 @@ class FailingService
     private Message $message;
 
     #[Asynchronous('async')]
-    #[InternalHandler('executionChannel', endpointId: 'failingServiceHandle')]
+    #[ServiceActivator('executionChannel')]
     public function handle(Message $message): void
     {
         $this->message = $message;

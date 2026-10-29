@@ -7,19 +7,17 @@ namespace Test\Ecotone\Amqp\Integration;
 use AMQPConnectionException;
 use AMQPException;
 use AMQPQueueException;
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Amqp\AmqpExtConnectionFactory as AmqpConnectionFactory;
-use Ecotone\Api\Amqp\AmqpLibConnectionFactory;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\PollingMetadata;
-use Ecotone\Api\ExtensionObject\RetryTemplateBuilder;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
-use Ecotone\Api\Messaging\PollableChannel;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
 use Ecotone\Messaging\Endpoint\PollingConsumer\ConnectionException;
-use Ecotone\Test\ChannelTestSupport;
-use Ecotone\Test\StaticMessageBuilder;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
+use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
+use Ecotone\Messaging\PollableChannel;
+use Ecotone\Messaging\Support\MessageBuilder;
 use Ecotone\Test\StubLogger;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 use Interop\Amqp\Impl\AmqpQueue;
 use PhpAmqpLib\Exception\AMQPIOException;
 use PhpAmqpLib\Exception\AMQPProtocolChannelException;
@@ -44,25 +42,28 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
         $messagePayload = 'some';
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             containerOrAvailableServices: [
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create($queueName),
+                ])
         );
 
         /** @var PollableChannel $messageChannel */
-        $messageChannel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($queueName);
+        $messageChannel = $ecotoneLite->getMessageChannelByName($queueName);
 
-        $messageChannel->send(StaticMessageBuilder::withPayload($messagePayload)->build());
+        $messageChannel->send(MessageBuilder::withPayload($messagePayload)->build());
 
         $this->assertEquals(
             'some',
-            $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(100))->getPayload()
+            $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->setFixedRateInMilliseconds(100))->getPayload()
         );
 
-        $this->assertNull($messageChannel->receiveWithTimeout(PollingMetadata::create('test')->withExecutionTimeLimitInMilliseconds(1000)));
+        $this->assertNull($messageChannel->receiveWithTimeout(PollingMetadata::create('test')->setFixedRateInMilliseconds(1)));
     }
 
     public function test_sending_and_receiving_without_delivery_guarantee()
@@ -70,39 +71,46 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
         $messagePayload = 'some';
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             containerOrAvailableServices: [
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)->withPublisherConfirms(false)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create($queueName)
+                        ->withPublisherConfirms(false),
+                ])
         );
 
         /** @var PollableChannel $messageChannel */
-        $messageChannel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($queueName);
+        $messageChannel = $ecotoneLite->getMessageChannelByName($queueName);
 
-        $messageChannel->send(StaticMessageBuilder::withPayload($messagePayload)->build());
+        $messageChannel->send(MessageBuilder::withPayload($messagePayload)->build());
 
         $this->assertEquals(
             'some',
-            $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(100))->getPayload()
+            $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->setFixedRateInMilliseconds(100))->getPayload()
         );
 
-        $this->assertNull($messageChannel->receiveWithTimeout(PollingMetadata::create('test')->withExecutionTimeLimitInMilliseconds(1000)));
+        $this->assertNull($messageChannel->receiveWithTimeout(PollingMetadata::create('test')->setFixedRateInMilliseconds(1)));
     }
 
     public function test_sending_and_receiving_message_from_amqp_using_consumer()
     {
         $queueName = 'orders';
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create($queueName),
+                ])
         );
 
         try {
@@ -128,14 +136,20 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $channelName = 'orders';
         $queueName = 'orders_queue';
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create(channelName:$channelName, queueName:$queueName, )],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(
+                        channelName: $channelName,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         try {
@@ -147,13 +161,13 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $this->assertEquals([], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
 
         $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithDefaults()->withTestingSetup(
-            executionTimeLimitInMilliseconds: 2000,
+            maxExecutionTimeInMilliseconds: 2000,
         ));
         /** Message should be consumed from the queue */
         $this->assertEquals(['milk'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
 
         $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithDefaults()->withTestingSetup(
-            executionTimeLimitInMilliseconds: 2000,
+            maxExecutionTimeInMilliseconds: 2000,
         ));
         /** Nothing should change, as we have not sent any new command message */
         $this->assertEquals(['milk'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
@@ -168,20 +182,26 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $queueName = 'orders_queue';
         $this->getRabbitConnectionFactory()->createContext()->purgeQueue(new AmqpQueue($queueName));
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 new OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create(channelName:$channelName, queueName:$queueName, )],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(
+                        channelName: $channelName,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         $ecotoneLite->getCommandBus()->sendWithRouting('order.register', 'milk');
 
         $ecotoneLite->run($channelName, ExecutionPollingMetadata::createWithDefaults()->withTestingSetup(
-            executionTimeLimitInMilliseconds: 2000,
+            maxExecutionTimeInMilliseconds: 2000,
         ));
         /** Message should be consumed from the queue */
         $this->assertEquals(['milk'], $ecotoneLite->getQueryBus()->sendWithRouting('order.getOrders'));
@@ -194,20 +214,24 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         $queueName = Uuid::v7()->toRfc4122();
         $messagePayload = 'some';
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             containerOrAvailableServices: [
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create($queueName)->withAutoDeclare(false)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create($queueName)
+                        ->withAutoDeclare(false),
+                ])
         );
 
         /** @var PollableChannel $messageChannel */
-        $messageChannel = ChannelTestSupport::of($ecotoneLite)->getMessageChannel($queueName);
+        $messageChannel = $ecotoneLite->getMessageChannelByName($queueName);
 
         $sendFailed = false;
         try {
-            $messageChannel->send(StaticMessageBuilder::withPayload($messagePayload)->build());
+            $messageChannel->send(MessageBuilder::withPayload($messagePayload)->build());
         } catch (Throwable) {
             $sendFailed = true;
         }
@@ -216,27 +240,31 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
         // AMQP Ext throws AMQPException, AMQP Lib throws AMQPProtocolChannelException
         $this->expectException(Throwable::class);
 
-        $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->withFixedRateInMilliseconds(1));
+        $messageChannel->receiveWithTimeout(PollingMetadata::create('test')->setFixedRateInMilliseconds(1));
     }
 
     public function test_failing_to_consume_due_to_connection_failure()
     {
         $loggerExample = StubLogger::create();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [\Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService::class],
             containerOrAvailableServices: [
                 new \Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService(),
                 ...array_merge([
                     AmqpConnectionFactory::class => new AmqpConnectionFactory(['dsn' => 'amqp://guest:guest@localhost:1000/%2f']),
-                    AmqpLibConnectionFactory::class => new AmqpConnectionFactory(['dsn' => 'amqp://guest:guest@localhost:1000/%2f']),
+                    AmqpConnectionFactory::class => new AmqpConnectionFactory(['dsn' => 'amqp://guest:guest@localhost:1000/%2f']),
+                    \Enqueue\AmqpLib\AmqpConnectionFactory::class => new AmqpConnectionFactory(['dsn' => 'amqp://guest:guest@localhost:1000/%2f']),
                 ]),
                 'logger' => $loggerExample,
             ],
-            extensionObjects: [
-                AmqpBackedMessageChannelBuilder::create('correctOrders'),
-                ServiceConfiguration::createWithDefaults()->withConnectionRetryTemplate(RetryTemplateBuilder::exponentialBackOff(1, 3)->maxRetries(3)),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withConnectionRetryTemplate(
+                    RetryTemplateBuilder::exponentialBackoff(1, 3)->maxRetryAttempts(3)
+                )
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create('correctOrders'),
+                ])
         );
 
         $wasFinallyRethrown = false;
@@ -260,10 +288,7 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
                 ConnectionException::connectionRetryMessage(2, 3),
                 ConnectionException::connectionRetryMessage(3, 9),
             ],
-            array_values(array_filter(
-                $loggerExample->getInfo(),
-                fn ($logEntry) => ! is_string($logEntry) || ! str_starts_with($logEntry, 'Executing Message Handler')
-            ))
+            $loggerExample->getInfo()
         );
     }
 
@@ -271,13 +296,15 @@ final class AmqpMessageChannelTest extends AmqpMessagingTestCase
     {
         $queueName = ErrorConfigurationContext::INPUT_CHANNEL;
 
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [\Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService::class, ErrorConfigurationContext::class],
             [
                 new \Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withFailFast(false),
         );
 
         $ecotoneLite->run('incorrectOrdersEndpoint');

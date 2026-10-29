@@ -6,29 +6,29 @@ use function array_map;
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Api\Amqp\AmqpConnectionReference;
-use Ecotone\Api\Attribute\AsynchronousRunningEndpoint;
-use Ecotone\Api\Attribute\ConsoleCommand;
-use Ecotone\Api\Attribute\ModuleAnnotation;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
-use Ecotone\Api\Gateway\CommandBus;
-use Ecotone\Api\Interceptor\Precedence;
+use Ecotone\Messaging\Attribute\AsynchronousRunningEndpoint;
+use Ecotone\Messaging\Attribute\ConsoleCommand;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ExtensionObjectResolver;
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\Container\Reference;
+use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 use Ecotone\Messaging\Handler\Logger\LoggingGateway;
 use Ecotone\Messaging\Handler\Processor\MethodInvoker\AroundInterceptorBuilder;
 use Ecotone\Messaging\Handler\Recoverability\RetryRunner;
+use Ecotone\Messaging\Precedence;
+use Ecotone\Modelling\CommandBus;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 #[ModuleAnnotation]
 /**
  * licence Apache-2.0
  */
-final class AmqpTransactionModule implements AnnotationModule
+class AmqpTransactionModule implements AnnotationModule
 {
     private function __construct()
     {
@@ -47,7 +47,7 @@ final class AmqpTransactionModule implements AnnotationModule
      */
     public function prepare(Configuration $messagingConfiguration, array $extensionObjects, ModuleReferenceSearchService $moduleReferenceSearchService, InterfaceToCallRegistry $interfaceToCallRegistry): void
     {
-        $connectionFactories = [AmqpConnectionReference::DEFAULT];
+        $connectionFactories = [AmqpConnectionFactory::class];
         $pointcut = AmqpTransaction::class;
         $amqpConfiguration = ExtensionObjectResolver::resolveUnique(AmqpConfiguration::class, $extensionObjects, AmqpConfiguration::createWithDefaults());
         ;
@@ -90,6 +90,11 @@ final class AmqpTransactionModule implements AnnotationModule
     /**
      * @inheritDoc
      */
+    public function canHandle($extensionObject): bool
+    {
+        return $extensionObject instanceof AmqpConfiguration;
+    }
+
     public function getModulePackageName(): string
     {
         return ModulePackageList::AMQP_PACKAGE;

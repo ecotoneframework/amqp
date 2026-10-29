@@ -2,7 +2,7 @@
 
 namespace Ecotone\Amqp\Configuration;
 
-use Ecotone\Api\Amqp\AmqpConnectionReference;
+use Enqueue\AmqpExt\AmqpConnectionFactory;
 
 /**
  * licence Apache-2.0
@@ -53,7 +53,7 @@ class AmqpConfiguration
         return $self;
     }
 
-    public function withDefaultConnectionReferenceNames(array $connectionReferenceNames = [AmqpConnectionReference::DEFAULT]): self
+    public function withDefaultConnectionReferenceNames(array $connectionReferenceNames = [AmqpConnectionFactory::class]): self
     {
         $self = clone $this;
         $self->defaultConnectionReferenceNames = $connectionReferenceNames;

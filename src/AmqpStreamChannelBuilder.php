@@ -2,22 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Ecotone\Api\Amqp;
+namespace Ecotone\Amqp;
 
-use Ecotone\Amqp\AmqpOutboundChannelAdapterBuilder;
-use Ecotone\Amqp\AmqpStreamInboundChannelAdapterBuilder;
 use Ecotone\Enqueue\EnqueueMessageChannelBuilder;
-use Ecotone\Messaging\Config\ConfigurationException;
+use Enqueue\AmqpLib\AmqpConnectionFactory;
 
 /**
  * licence Enterprise
- *
- * Use requires an Ecotone Enterprise licence (see LICENSE-ENTERPRISE; trial: https://ecotone.tech/pricing).
  */
 class AmqpStreamChannelBuilder extends EnqueueMessageChannelBuilder
 {
     private string $channelName;
-    public readonly string $messageGroupId;
+    private string $messageGroupId;
 
     private function __construct(
         string $channelName,
@@ -39,27 +35,38 @@ class AmqpStreamChannelBuilder extends EnqueueMessageChannelBuilder
     }
 
     /**
-     * @link https://docs.ecotone.tech/modules/amqp-support-rabbitmq/message-channel#start-position-options
+     * Create a stream channel with consume method enabled and stream queue type
+     *
+     * @param string $channelName
+     * @param string $startPosition Stream offset: 'first', 'last', 'next', or specific offset number
+     * @param string $amqpConnectionReferenceName
+     * @param string|null $queueName If null, channel name will be used as queue name
+     * @param string|null $messageGroupId If null, channel name will be used as message group id. This the default consumer group for Consumer with id equal to channel name
+     * @return self
      */
     public static function create(
         string  $channelName,
         string  $startPosition = 'first',
-        string  $amqpConnectionReferenceName = AmqpConnectionReference::DEFAULT_STREAM,
+        string  $amqpConnectionReferenceName = AmqpConnectionFactory::class,
         ?string $queueName = null,
         ?string $messageGroupId = null
     ): self {
-        if ($startPosition === 'next') {
-            throw ConfigurationException::create("AMQP stream channel `{$channelName}` cannot start at `next`: RabbitMQ delivers a `next` consumer only what is published after it attaches, so every message published before the consumer's first poll, or between two of its runs, is never delivered. Start at `first`, at `last` or at an absolute offset such as `100`; after the first commit the consumer resumes from its committed offset whichever start position it was given.");
-        }
         $queueName ??= $channelName;
 
         return new self($channelName, $amqpConnectionReferenceName, $queueName, $startPosition, $messageGroupId);
     }
 
     /**
-     * @link https://docs.ecotone.tech/modules/amqp-support-rabbitmq/message-channel#prefetch-count
+     * Set the prefetch count (QoS) for stream consumption
+     *
+     * Controls how many unacknowledged messages RabbitMQ will deliver to the consumer.
+     * Lower values (e.g., 1) provide better flow control but may reduce throughput.
+     * Higher values allow faster consumption but use more memory.
+     *
+     * @param int $prefetchCount Number of messages to prefetch (default: 100)
+     * @return self
      */
-    public function withPrefetchCount(int $prefetchCount): static
+    public function withPrefetchCount(int $prefetchCount): self
     {
         /** @var AmqpStreamInboundChannelAdapterBuilder $inboundAdapter */
         $inboundAdapter = $this->getInboundChannelAdapter();
@@ -69,9 +76,20 @@ class AmqpStreamChannelBuilder extends EnqueueMessageChannelBuilder
     }
 
     /**
-     * @link https://docs.ecotone.tech/modules/amqp-support-rabbitmq/message-channel#commit-interval
+     * Set the commit interval for position tracking
+     *
+     * Controls how often the consumer position is committed to the position tracker.
+     * - commitInterval=1: Commit after every message (default, safest but slowest)
+     * - commitInterval=10: Commit after every 10 messages (better performance, small risk of reprocessing)
+     * - The last message in a batch is always committed, even if the interval hasn't been reached
+     *
+     * Example with commitInterval=2 and 5 messages:
+     * - Commits happen at offsets: 2, 4, 5 (5 is committed because it's the last in the batch)
+     *
+     * @param int $commitInterval Number of messages to process before committing position (default: 100)
+     * @return self
      */
-    public function withCommitInterval(int $commitInterval): static
+    public function withCommitInterval(int $commitInterval): self
     {
         /** @var AmqpStreamInboundChannelAdapterBuilder $inboundAdapter */
         $inboundAdapter = $this->getInboundChannelAdapter();
@@ -83,6 +101,11 @@ class AmqpStreamChannelBuilder extends EnqueueMessageChannelBuilder
     public function getMessageChannelName(): string
     {
         return $this->channelName;
+    }
+
+    public function getMessageGroupId(): string
+    {
+        return $this->messageGroupId;
     }
 
     public function isPollable(): bool

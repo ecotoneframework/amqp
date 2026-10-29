@@ -2,9 +2,9 @@
 
 namespace Test\Ecotone\Amqp\Fixture\DistributedEventBus\Receiver;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Attribute\ServiceContext;
-use Ecotone\Api\ExtensionObject\PollingMetadata;
+use Ecotone\Amqp\Distribution\AmqpDistributedBusConfiguration;
+use Ecotone\Messaging\Attribute\ServiceContext;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
 
 /**
  * licence Apache-2.0
@@ -17,10 +17,10 @@ class TicketServiceMessagingConfiguration
     public function configure()
     {
         return [
-            AmqpBackedMessageChannelBuilder::create(self::SERVICE_NAME),
+            AmqpDistributedBusConfiguration::createConsumer(),
             PollingMetadata::create(self::SERVICE_NAME)
-                ->withHandledMessageLimit(1)
-                ->withExecutionTimeLimitInMilliseconds(5000),
+                ->setHandledMessageLimit(1)
+                ->setExecutionTimeLimitInMilliseconds(5000),
         ];
     }
 }

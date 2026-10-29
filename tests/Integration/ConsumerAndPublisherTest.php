@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
+use Ecotone\Amqp\AmqpQueue;
 use Ecotone\Amqp\Configuration\AmqpMessageConsumerConfiguration;
-use Ecotone\Api\Amqp\AmqpMessagePublisherConfiguration;
-use Ecotone\Api\Amqp\AmqpQueue;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
+use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
 use Symfony\Component\Uid\Uuid;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\AmqpConsumer\AmqpConsumerExample;
@@ -26,18 +27,20 @@ final class ConsumerAndPublisherTest extends AmqpMessagingTestCase
     {
         $endpointId = 'asynchronous_endpoint';
         $queueName = Uuid::v7()->toRfc4122();
-        $ecotoneLite = $this->bootstrapFlowTesting(
+        $ecotoneLite = $this->bootstrapForTesting(
             [AmqpConsumerExample::class],
             [
                 new AmqpConsumerExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpMessageConsumerConfiguration::create($endpointId, $queueName),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpMessageConsumerConfiguration::create($endpointId, $queueName),
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withDefaultRoutingKey($queueName),
+                ])
         );
 
         $payload = 'random_payload';

@@ -2,11 +2,11 @@
 
 namespace Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Attribute\ServiceContext;
-use Ecotone\Api\ExtensionObject\ErrorHandlerConfiguration;
-use Ecotone\Api\ExtensionObject\PollingMetadata;
-use Ecotone\Api\ExtensionObject\RetryTemplateBuilder;
+use Ecotone\Amqp\Distribution\AmqpDistributedBusConfiguration;
+use Ecotone\Messaging\Attribute\ServiceContext;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
+use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
+use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
 
 /**
  * licence Apache-2.0
@@ -21,11 +21,11 @@ class TicketServiceMessagingConfiguration
     public function configure()
     {
         return [
-            AmqpBackedMessageChannelBuilder::create(self::SERVICE_NAME),
+            AmqpDistributedBusConfiguration::createConsumer(),
             PollingMetadata::create(self::SERVICE_NAME)
-                ->withHandledMessageLimit(1)
-                ->withExecutionTimeLimitInMilliseconds(5000)
-                ->withErrorChannelName(self::ERROR_CHANNEL),
+                ->setHandledMessageLimit(1)
+                ->setExecutionTimeLimitInMilliseconds(5000)
+                ->setErrorChannelName(self::ERROR_CHANNEL),
         ];
     }
 
@@ -35,7 +35,7 @@ class TicketServiceMessagingConfiguration
         return ErrorHandlerConfiguration::createWithDeadLetterChannel(
             self::ERROR_CHANNEL,
             RetryTemplateBuilder::fixedBackOff(1)
-                ->maxRetries(1),
+                ->maxRetryAttempts(1),
             self::DEAD_LETTER_CHANNEL
         );
     }

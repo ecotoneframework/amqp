@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\PollingMetadata;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Messaging\Config\ConfigurationException;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\DeadLetter\ErrorConfigurationContext;
 use Test\Ecotone\Amqp\Fixture\DeadLetter\OrderService;
@@ -26,15 +27,15 @@ final class ErrorChannelTest extends AmqpMessagingTestCase
     {
         $ecotone = $this->bootstrapFlowTesting(
             containerOrAvailableServices: [new OrderService(), ...$this->getConnectionFactoryReferences()],
-            extensionObjects: [\Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withNamespaces(['Test\Ecotone\Amqp\Fixture\DeadLetter']),
             pathToRootCatalog: __DIR__ . '/../../',
-            namespaces: ['Test\Ecotone\Amqp\Fixture\DeadLetter'],
-            environment: 'prod',
         );
 
         $ecotone
-            ->sendCommandWithRouting('order.register', 'coffee')
+            ->sendCommandWithRoutingKey('order.register', 'coffee')
             ->run('correctOrders')
             ->run('incorrectOrdersEndpoint')
         ;
@@ -64,18 +65,21 @@ final class ErrorChannelTest extends AmqpMessagingTestCase
         $ecotone = $this->bootstrapFlowTesting(
             classesToResolve: [OrderService::class],
             containerOrAvailableServices: [new OrderService(1), ...$this->getConnectionFactoryReferences()],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpBackedMessageChannelBuilder::create($amqpDeadLetter = 'amqp_dead_letter')->withReceiveTimeout(1),
-                AmqpBackedMessageChannelBuilder::create(ErrorConfigurationContext::INPUT_CHANNEL)->withReceiveTimeout(1),
-                PollingMetadata::create(ErrorConfigurationContext::INPUT_CHANNEL)->withErrorChannelName($amqpDeadLetter),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create($amqpDeadLetter = 'amqp_dead_letter')
+                        ->withReceiveTimeout(1),
+                    AmqpBackedMessageChannelBuilder::create(ErrorConfigurationContext::INPUT_CHANNEL)
+                        ->withReceiveTimeout(1),
+                    PollingMetadata::create(ErrorConfigurationContext::INPUT_CHANNEL)
+                        ->setErrorChannelName($amqpDeadLetter),
+                ])
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE])),
             pathToRootCatalog: __DIR__ . '/../../',
         );
 
         $ecotone
-            ->sendCommandWithRouting('order.register', 'coffee')
+            ->sendCommandWithRoutingKey('order.register', 'coffee')
             ->run(ErrorConfigurationContext::INPUT_CHANNEL, ExecutionPollingMetadata::createWithTestingSetup(1, 1000, false));
         self::assertEquals(0, $ecotone->sendQueryWithRouting('getOrderAmount'));
 
@@ -92,12 +96,14 @@ final class ErrorChannelTest extends AmqpMessagingTestCase
         $this->bootstrapFlowTesting(
             classesToResolve: [OrderService::class],
             containerOrAvailableServices: [new OrderService(1), ...$this->getConnectionFactoryReferences()],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpBackedMessageChannelBuilder::create(ErrorConfigurationContext::INPUT_CHANNEL)->withReceiveTimeout(1),
-                PollingMetadata::create(ErrorConfigurationContext::INPUT_CHANNEL)->withErrorChannelName('amqp_dead_letter'),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create(ErrorConfigurationContext::INPUT_CHANNEL)
+                        ->withReceiveTimeout(1),
+                    PollingMetadata::create(ErrorConfigurationContext::INPUT_CHANNEL)
+                        ->setErrorChannelName('amqp_dead_letter'),
+                ])
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE])),
             pathToRootCatalog: __DIR__ . '/../../',
         );
     }
@@ -106,15 +112,15 @@ final class ErrorChannelTest extends AmqpMessagingTestCase
     {
         $ecotone = $this->bootstrapFlowTesting(
             containerOrAvailableServices: [new \Test\Ecotone\Amqp\Fixture\ErrorChannel\OrderService(), ...$this->getConnectionFactoryReferences()],
-            extensionObjects: [\Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withNamespaces(['Test\Ecotone\Amqp\Fixture\ErrorChannel']),
             pathToRootCatalog: __DIR__ . '/../../',
-            namespaces: ['Test\Ecotone\Amqp\Fixture\ErrorChannel'],
-            environment: 'prod',
         );
 
         $ecotone
-            ->sendCommandWithRouting('order.register', 'coffee')
+            ->sendCommandWithRoutingKey('order.register', 'coffee')
             ->run('correctOrders')
         ;
 

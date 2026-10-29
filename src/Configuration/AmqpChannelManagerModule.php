@@ -5,14 +5,12 @@ declare(strict_types=1);
 namespace Ecotone\Amqp\Configuration;
 
 use Ecotone\Amqp\AmqpAdmin;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
 use Ecotone\Amqp\AmqpChannelManager;
+use Ecotone\Amqp\AmqpStreamChannelBuilder;
 use Ecotone\AnnotationFinder\AnnotationFinder;
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Amqp\AmqpStreamChannelBuilder;
-use Ecotone\Api\Attribute\ModuleAnnotation;
-use Ecotone\Api\ExtensionObject\ChannelInitializationConfiguration;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
+use Ecotone\Messaging\Attribute\ModuleAnnotation;
+use Ecotone\Messaging\Channel\Manager\ChannelInitializationConfiguration;
 use Ecotone\Messaging\Channel\Manager\ChannelManagerReference;
 use Ecotone\Messaging\Config\Annotation\AnnotationModule;
 use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\ExtensionObjectResolver;
@@ -20,7 +18,9 @@ use Ecotone\Messaging\Config\Annotation\ModuleConfiguration\NoExternalConfigurat
 use Ecotone\Messaging\Config\Configuration;
 use Ecotone\Messaging\Config\Container\Definition;
 use Ecotone\Messaging\Config\Container\Reference;
+use Ecotone\Messaging\Config\ModulePackageList;
 use Ecotone\Messaging\Config\ModuleReferenceSearchService;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Handler\InterfaceToCallRegistry;
 
 #[ModuleAnnotation]
@@ -46,7 +46,7 @@ final class AmqpChannelManagerModule extends NoExternalConfigurationModule imple
             ChannelInitializationConfiguration::createWithDefaults()
         );
 
-        $shouldAutoInitialize = $channelInitConfig->automaticChannelInitialization;
+        $shouldAutoInitialize = $channelInitConfig->isAutomaticChannelInitializationEnabled();
 
         // Configure channel builders and register channel managers
         foreach ($extensionObjects as $extensionObject) {
@@ -94,6 +94,14 @@ final class AmqpChannelManagerModule extends NoExternalConfigurationModule imple
                 );
             }
         }
+    }
+
+    public function canHandle($extensionObject): bool
+    {
+        return
+            $extensionObject instanceof AmqpBackedMessageChannelBuilder
+            || $extensionObject instanceof AmqpStreamChannelBuilder
+            || $extensionObject instanceof ChannelInitializationConfiguration;
     }
 
     public function getModuleExtensions(ServiceConfiguration $serviceConfiguration, array $serviceExtensions): array

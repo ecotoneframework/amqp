@@ -31,7 +31,6 @@
     "description": "AMQP / RabbitMQ transport for Ecotone asynchronous messaging, outbox, and dead letter.",
     "autoload": {
         "psr-4": {
-            "Ecotone\\Api\\Amqp\\": "Api/",
             "Ecotone\\Amqp\\": "src"
         }
     },
@@ -44,14 +43,14 @@
     },
     "require": {
         "ext-amqp": "*",
-        "ecotone/enqueue": "~2.0.0-beta.7",
+        "ecotone/enqueue": "~1.328.3",
         "enqueue/amqp-ext": "^0.10.18",
         "enqueue/dsn": "^0.10.4",
         "enqueue/enqueue": "^0.10.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.5|^11.0|^12.0",
-        "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan": "^1.8|^2.0",
         "doctrine/annotations": "^1.13|^2.0",
         "ext-amqp": "*",
         "enqueue/amqp-ext": "^0.10.18",
@@ -85,7 +84,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "2.0.x-dev"
+            "dev-main": "1.328.x-dev"
         },
         "ecotone": {
             "repository": "amqp"
@@ -101,6 +100,6 @@
                 "description": "Allows to use Enterprise features of Ecotone. For more information please write to support@simplycodedsoftware.com"
             }
         },
-        "release-time": "2026-10-28 18:55:11"
+        "release-time": "2026-10-29 20:17:56"
     }
 }

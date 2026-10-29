@@ -4,18 +4,16 @@ declare(strict_types=1);
 
 namespace Ecotone\Amqp;
 
-use AMQPQueueException;
 use Ecotone\Amqp\Transaction\AmqpTransactionInterceptor;
-use Ecotone\Api\Messaging\BatchMessage;
-use Ecotone\Api\Messaging\DestinationDoesNotExistException;
-use Ecotone\Api\Messaging\Message;
 use Ecotone\Enqueue\CachedConnectionFactory;
+use Ecotone\Messaging\BatchMessage;
 use Ecotone\Messaging\Channel\DeliveryConfirmation\FailedDelivery;
 use Ecotone\Messaging\Channel\DeliveryConfirmation\PendingDeliveryRegistry;
 use Ecotone\Messaging\Channel\DeliveryConfirmation\PublishingFailedException;
 use Ecotone\Messaging\Channel\PollableChannel\Serialization\OutboundMessageConverter;
 use Ecotone\Messaging\Config\ConfigurationException;
 use Ecotone\Messaging\Conversion\ConversionService;
+use Ecotone\Messaging\Message;
 use Ecotone\Messaging\MessageHandler;
 use Ecotone\Messaging\Support\Assert;
 use Ecotone\Messaging\Support\MessageBuilder;
@@ -24,13 +22,10 @@ use Enqueue\AmqpLib\AmqpContext as AmqpLibContext;
 use Enqueue\AmqpTools\DelayStrategy;
 use Interop\Amqp\AmqpContext as InteropAmqpContext;
 use Interop\Amqp\AmqpMessage;
-use Interop\Amqp\Impl\AmqpQueue;
 use Interop\Amqp\Impl\AmqpTopic;
-use PhpAmqpLib\Exception\AMQPProtocolChannelException;
 use PhpAmqpLib\Message\AMQPMessage as LibAMQPMessage;
 use PhpAmqpLib\Wire\AMQPTable;
 use RuntimeException;
-use Throwable;
 
 /**
  * @author  Dariusz Gafka <support@simplycodedsoftware.com>
@@ -41,8 +36,6 @@ use Throwable;
  */
 class AmqpOutboundChannelAdapter implements MessageHandler
 {
-    private const NOT_FOUND_REPLY_CODE = 404;
-
     /**
      * @var bool
      */
@@ -62,14 +55,11 @@ class AmqpOutboundChannelAdapter implements MessageHandler
         private ConversionService          $conversionService,
         private AmqpTransactionInterceptor $amqpTransactionInterceptor,
         private PendingDeliveryRegistry    $pendingDeliveryRegistry,
-        private MessageBuilder             $messageBuilder,
-        private DelayStrategy              $delayStrategy = new HeadersExchangeDelayStrategy(),
+        private ?DelayStrategy             $delayStrategy = null,
         private bool                       $batchPublishing = false,
         private bool                       $nonBlockingConfirmation = false,
         private int                        $confirmationTimeout = AmqpOutboundChannelAdapterBuilder::DEFAULT_CONFIRMATION_TIMEOUT,
         private string                     $channelName = '',
-        private bool                       $requireExistingDestination = false,
-        private string                     $connectionReferenceName = '',
     ) {
     }
 
@@ -85,16 +75,14 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $messagesToPublish = $payload instanceof BatchMessage
             ? array_map(
-                fn (array $entry): Message => $this->messageBuilder->withPayload($entry['payload'])->setMultipleHeaders($entry['headers'])->build(),
-                $payload->entries,
+                fn (array $entry): Message => MessageBuilder::withPayload($entry['payload'])->setMultipleHeaders($entry['headers'])->build(),
+                $payload->getEntries(),
             )
             : [$message];
 
         if ($messagesToPublish === []) {
             return;
         }
-
-        $this->verifyDestinationExists();
 
         $context = $this->connectionFactory->createContext();
         $confirmations = $this->getPublisherConfirmations();
@@ -196,7 +184,7 @@ class AmqpOutboundChannelAdapter implements MessageHandler
 
         $this->connectionFactory->getProducer()
             ->setTimeToLive($timeToLive)
-            ->setDelayStrategy($this->delayStrategy)
+            ->setDelayStrategy($this->delayStrategy ??= new HeadersExchangeDelayStrategy())
             ->setDeliveryDelay($deliveryDelay)
 //            this allow for having queue per delay instead of queue per delay + exchangeName
             ->send(new AmqpTopic($exchangeName), $messageToSend);
@@ -346,52 +334,5 @@ class AmqpOutboundChannelAdapter implements MessageHandler
             fn (FailedDelivery $failedDelivery): string => $failedDelivery->getFailureReason(),
             $deliveryResult->getFailedDeliveries(),
         ))));
-    }
-
-    private function verifyDestinationExists(): void
-    {
-        if (! $this->requireExistingDestination) {
-            return;
-        }
-
-        $queueName = (string) $this->routingKey;
-        /** @var InteropAmqpContext $context */
-        $context = $this->connectionFactory->getInnerConnectionFactory()->createContext();
-        $queue = new AmqpQueue($queueName);
-        $queue->addFlag(AmqpQueue::FLAG_PASSIVE);
-
-        try {
-            $context->declareQueue($queue);
-        } catch (Throwable $exception) {
-            if (! self::isQueueNotFound($exception)) {
-                throw $exception;
-            }
-
-            throw DestinationDoesNotExistException::forChannel(
-                $this->channelName,
-                'queue',
-                $queueName,
-                sprintf("AMQP connection '%s'", $this->connectionReferenceName),
-                sprintf("AmqpBackedMessageChannelBuilder::create('%s', queueName: ...)", $this->channelName),
-            );
-        } finally {
-            $context->close();
-        }
-    }
-
-    private static function isQueueNotFound(Throwable $exception): bool
-    {
-        for ($cause = $exception; $cause !== null; $cause = $cause->getPrevious()) {
-            if (($cause instanceof AMQPQueueException || $cause instanceof AMQPProtocolChannelException) && $cause->getCode() === self::NOT_FOUND_REPLY_CODE) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    public function __toString(): string
-    {
-        return "amqp outbound: exchange `{$this->exchangeName}`";
     }
 }

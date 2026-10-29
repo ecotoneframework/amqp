@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\Amqp\AmqpLibConnectionFactory as AmqpLibConnection;
-use Ecotone\Api\Amqp\AmqpQueue;
-use Ecotone\Api\Amqp\AmqpStreamChannelBuilder;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\TestConfiguration;
+use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Amqp\AmqpStreamChannelBuilder;
+use Ecotone\Lite\Test\TestConfiguration;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Messaging\Consumer\ConsumerPositionTracker;
 use Ecotone\Messaging\Consumer\InMemory\InMemoryConsumerPositionTracker;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
 use Ecotone\Test\LicenceTesting;
+use Enqueue\AmqpLib\AmqpConnectionFactory as AmqpLibConnection;
 use Symfony\Component\Uid\Uuid;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
@@ -43,20 +44,27 @@ final class AmqpStreamPositionTrackingTest extends AmqpMessagingTestCase
         $orderService = new OrderService();
 
         // First application instance - process some messages
-        $ecotoneLite1 = $this->bootstrapFlowTesting(
+        $ecotoneLite1 = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 $orderService,
                 ConsumerPositionTracker::class => $sharedPositionTracker,
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    TestConfiguration::createWithDefaults()
+                        ->withInMemoryConsumerPositionTracker(false), // Disable default, use our shared instance
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first',
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Send 5 messages
@@ -79,20 +87,27 @@ final class AmqpStreamPositionTrackingTest extends AmqpMessagingTestCase
         $this->assertNotNull($committedPosition, 'Position should be committed after processing messages');
 
         // Second application instance - should resume from where first left off
-        $ecotoneLite2 = $this->bootstrapFlowTesting(
+        $ecotoneLite2 = $this->bootstrapForTesting(
             [OrderService::class],
             [
                 $orderService,
                 ConsumerPositionTracker::class => $sharedPositionTracker, // Same shared instance
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                AmqpQueue::createStreamQueue($queueName),
-                AmqpStreamChannelBuilder::create(channelName:$channelName, startPosition:'first', amqpConnectionReferenceName:AmqpLibConnection::class, queueName:$queueName, ),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
-            testConfiguration: TestConfiguration::createWithDefaults()->withInMemoryConsumerPositionTracker(false),
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withLicenceKey(LicenceTesting::VALID_LICENCE)
+                ->withExtensionObjects([
+                    TestConfiguration::createWithDefaults()
+                        ->withInMemoryConsumerPositionTracker(false), // Disable default, use our shared instance
+                    AmqpQueue::createStreamQueue($queueName),
+                    AmqpStreamChannelBuilder::create(
+                        channelName: $channelName,
+                        startPosition: 'first', // Will be overridden by committed position
+                        amqpConnectionReferenceName: AmqpLibConnection::class,
+                        queueName: $queueName,
+                    ),
+                ])
         );
 
         // Run consumer - should process remaining messages

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Ecotone\Modelling\AggregateMessage;
-use Ecotone\Test\ChannelTestSupport;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\Calendar\Calendar;
 use Test\Ecotone\Amqp\Fixture\Calendar\ScheduleMeeting;
@@ -28,8 +28,11 @@ final class CallAggregateAsynchronousEndpointTest extends AmqpMessagingTestCase
             containerOrAvailableServices: [
                 ...self::getConnectionFactoryReferences(),
             ],
-            extensionObjects: [AmqpBackedMessageChannelBuilder::create('calendar')],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpBackedMessageChannelBuilder::create('calendar'),
+                ])
         );
 
         $ecotone
@@ -37,6 +40,6 @@ final class CallAggregateAsynchronousEndpointTest extends AmqpMessagingTestCase
             ->sendCommand(new ScheduleMeeting('1', '2'))
         ;
 
-        self::assertFalse(ChannelTestSupport::of($ecotone)->getMessageChannel('calendar')->receive()->getHeaders()->containsKey(AggregateMessage::CALLED_AGGREGATE_INSTANCE));
+        self::assertFalse($ecotone->getMessageChannel('calendar')->receive()->getHeaders()->containsKey(AggregateMessage::CALLED_AGGREGATE_INSTANCE));
     }
 }

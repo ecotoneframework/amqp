@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
-use Ecotone\Api\Lite\Test\FlowTestSupport;
-use Ecotone\Test\LicenceTesting;
+use Ecotone\Lite\Test\FlowTestSupport;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Publisher\UserService;
 use Test\Ecotone\Amqp\Fixture\DistributedDeadLetter\Receiver\TicketServiceReceiver;
@@ -29,7 +28,7 @@ final class DistributedDeadLetterTest extends AmqpMessagingTestCase
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_ERROR_TICKETS_COUNT));
 
-        $userService->sendCommandWithRouting(UserService::CHANGE_BILLING_DETAILS, 'user_service');
+        $userService->sendCommandWithRoutingKey(UserService::CHANGE_BILLING_DETAILS, 'user_service');
 
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_ERROR_TICKETS_COUNT));
@@ -42,12 +41,12 @@ final class DistributedDeadLetterTest extends AmqpMessagingTestCase
     {
         return $this->bootstrapFlowTesting(
             containerOrAvailableServices: array_merge([...$this->getConnectionFactoryReferences()], $services),
-            extensionObjects: [ServiceConfiguration::createWithDefaults()->withServiceName($serviceName)],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withServiceName($serviceName)
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withNamespaces($namespaces),
             pathToRootCatalog: __DIR__ . '/../../',
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            namespaces: $namespaces,
-            environment: 'prod',
         );
     }
 }

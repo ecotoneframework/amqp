@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Test\Ecotone\Amqp\Integration;
 
 use Ecotone\Amqp\Configuration\AmqpConfiguration;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\ServiceConfiguration;
-use Ecotone\Api\Lite\Test\FlowTestSupport;
+use Ecotone\Lite\Test\FlowTestSupport;
 use Ecotone\Messaging\Channel\PollableChannel\GlobalPollableChannelConfiguration;
-use Ecotone\Test\LicenceTesting;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\DistributedEventBus\AsynchronousEventHandler\TicketNotificationSubscriber;
 use Test\Ecotone\Amqp\Fixture\DistributedEventBus\Publisher\UserService;
@@ -30,12 +29,12 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
         $userService = $this->bootstrapEcotone('user_service', ['Test\Ecotone\Amqp\Fixture\DistributedEventBus\Publisher'], [new UserService()]);
         $ticketService = $this->bootstrapEcotone('ticket_service', ['Test\Ecotone\Amqp\Fixture\DistributedEventBus\Receiver'], [new TicketServiceReceiver()]);
 
-        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup());
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
 
-        $userService->sendCommandWithRouting(UserService::CHANGE_BILLING_DETAILS, 'user_service');
+        $userService->sendCommandWithRoutingKey(UserService::CHANGE_BILLING_DETAILS, 'user_service');
 
-        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup());
         self::assertEquals(1, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
         self::assertEquals(
             ['ticket was created'],
@@ -55,14 +54,14 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
             [new TicketServiceReceiver(), new TicketNotificationSubscriber()]
         );
 
-        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup());
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
 
-        $userService->sendCommandWithRouting(UserService::CHANGE_BILLING_DETAILS, 'user_service');
+        $userService->sendCommandWithRoutingKey(UserService::CHANGE_BILLING_DETAILS, 'user_service');
 
-        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('ticket_service', ExecutionPollingMetadata::createWithTestingSetup());
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
-        $ticketService->run('notification_channel', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('notification_channel');
         self::assertEquals(1, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
     }
 
@@ -84,7 +83,7 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
 
-        $userService->sendCommandWithRouting(
+        $userService->sendCommandWithRoutingKey(
             UserService::CHANGE_BILLING_DETAILS,
             'user_service',
             metadata: [
@@ -94,7 +93,7 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
 
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
-        $ticketService->run('notification_channel', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('notification_channel');
         self::assertEquals(1, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
     }
 
@@ -117,7 +116,7 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketServiceReceiver::GET_TICKETS_COUNT));
 
-        $userService->sendCommandWithRouting(
+        $userService->sendCommandWithRoutingKey(
             UserService::CHANGE_BILLING_DETAILS,
             'user_service',
             metadata: [
@@ -127,7 +126,7 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
 
         $ticketService->run('ticket_service');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
-        $ticketService->run('notification_channel', ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1));
+        $ticketService->run('notification_channel');
         self::assertEquals(0, $ticketService->sendQueryWithRouting(TicketNotificationSubscriber::GET_TICKET_NOTIFICATION_COUNT));
     }
 
@@ -139,11 +138,12 @@ final class DistributedEventBusTest extends AmqpMessagingTestCase
     ): FlowTestSupport {
         return $this->bootstrapFlowTesting(
             containerOrAvailableServices: array_merge([...$this->getConnectionFactoryReferences()], $services),
-            extensionObjects: array_merge($extensionObjects, [ServiceConfiguration::createWithDefaults()->withServiceName($serviceName)]),
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withServiceName($serviceName)
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::ASYNCHRONOUS_PACKAGE, ModulePackageList::AMQP_PACKAGE]))
+                ->withNamespaces($namespaces)
+                ->withExtensionObjects($extensionObjects),
             pathToRootCatalog: __DIR__ . '/../../',
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            namespaces: $namespaces,
         );
     }
 }

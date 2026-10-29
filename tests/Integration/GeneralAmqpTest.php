@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\Lite\Test\FlowTestSupport;
+use Ecotone\Lite\Test\FlowTestSupport;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
 use Test\Ecotone\Amqp\AmqpMessagingTestCase;
 use Test\Ecotone\Amqp\Fixture\Order\OrderErrorHandler;
 use Test\Ecotone\Amqp\Fixture\Order\OrderService;
@@ -27,7 +28,7 @@ final class GeneralAmqpTest extends AmqpMessagingTestCase
             services: [new OrderService(), new OrderErrorHandler()],
         );
 
-        $ecotone->sendCommandWithRouting('order.register', 'milk');
+        $ecotone->sendCommandWithRoutingKey('order.register', 'milk');
         self::assertEquals(
             [],
             $ecotone->sendQueryWithRouting('order.getOrders')
@@ -49,11 +50,11 @@ final class GeneralAmqpTest extends AmqpMessagingTestCase
             amqpConfig: ['heartbeat' => 2]
         );
 
-        $ecotone->sendCommandWithRouting('order.register', 'milk');
+        $ecotone->sendCommandWithRoutingKey('order.register', 'milk');
         sleep(5);
-        $ecotone->sendCommandWithRouting('order.register', 'salt');
+        $ecotone->sendCommandWithRoutingKey('order.register', 'salt');
         sleep(5);
-        $ecotone->sendCommandWithRouting('order.register', 'sunflower');
+        $ecotone->sendCommandWithRoutingKey('order.register', 'sunflower');
         $ecotone->run('orders');
         $ecotone->run('orders');
         $ecotone->run('orders');
@@ -72,7 +73,7 @@ final class GeneralAmqpTest extends AmqpMessagingTestCase
         self::assertEquals(
             ['window'],
             $ecotone
-                ->sendCommandWithRouting('addToBasket', 'window')
+                ->sendCommandWithRoutingKey('addToBasket', 'window')
                 ->run('addToCart')
                 ->sendQueryWithRouting('getShoppingCartList')
         );
@@ -82,10 +83,11 @@ final class GeneralAmqpTest extends AmqpMessagingTestCase
     {
         return $this->bootstrapFlowTesting(
             containerOrAvailableServices: array_merge($this->getConnectionFactoryReferences($amqpConfig), $services),
-            enabledModules: [ModulePackageList::AMQP_PACKAGE, ],
+            configuration: ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE, ModulePackageList::ASYNCHRONOUS_PACKAGE]))
+                ->withNamespaces($namespaces),
             pathToRootCatalog: __DIR__ . '/../../',
-            namespaces: $namespaces,
-            environment: 'prod',
         );
     }
 }

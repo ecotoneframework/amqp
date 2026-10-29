@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
-use Ecotone\Api\Amqp\AmqpBackedMessageChannelBuilder;
-use Ecotone\Api\Attribute\ServiceContext;
-use Ecotone\Api\ExtensionObject\ErrorHandlerConfiguration;
-use Ecotone\Api\ExtensionObject\PollingMetadata;
-use Ecotone\Api\ExtensionObject\RetryTemplateBuilder;
+use Ecotone\Amqp\AmqpBackedMessageChannelBuilder;
+use Ecotone\Messaging\Attribute\ServiceContext;
+use Ecotone\Messaging\Endpoint\PollingMetadata;
+use Ecotone\Messaging\Handler\Recoverability\ErrorHandlerConfiguration;
+use Ecotone\Messaging\Handler\Recoverability\RetryTemplateBuilder;
 
 /**
  * licence Apache-2.0
@@ -36,8 +36,8 @@ class ErrorConfigurationContext
     {
         return ErrorHandlerConfiguration::createWithDeadLetterChannel(
             self::ERROR_CHANNEL,
-            RetryTemplateBuilder::exponentialBackOff(1, 1)
-                ->maxRetries(2),
+            RetryTemplateBuilder::exponentialBackoff(1, 1)
+                ->maxRetryAttempts(2),
             self::DEAD_LETTER_CHANNEL
         );
     }
@@ -48,12 +48,12 @@ class ErrorConfigurationContext
         return [
             PollingMetadata::create(self::INPUT_CHANNEL)
 //                longer period of time, as rabbit during republishing message between queues may have a delay
-                ->withExecutionTimeLimitInMilliseconds(3000)
-                ->withHandledMessageLimit(1)
-                ->withErrorChannelName(self::ERROR_CHANNEL),
+                ->setExecutionTimeLimitInMilliseconds(3000)
+                ->setHandledMessageLimit(1)
+                ->setErrorChannelName(self::ERROR_CHANNEL),
             PollingMetadata::create('incorrectOrdersEndpoint')
-                ->withExecutionTimeLimitInMilliseconds(3000)
-                ->withHandledMessageLimit(1),
+                ->setExecutionTimeLimitInMilliseconds(3000)
+                ->setHandledMessageLimit(1),
         ];
     }
 }

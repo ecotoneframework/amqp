@@ -2,10 +2,10 @@
 
 namespace Test\Ecotone\Amqp\Fixture\DeadLetter;
 
-use Ecotone\Api\Attribute\Asynchronous;
-use Ecotone\Api\Attribute\CommandHandler;
-use Ecotone\Api\Attribute\InternalHandler;
-use Ecotone\Api\Attribute\QueryHandler;
+use Ecotone\Messaging\Attribute\Asynchronous;
+use Ecotone\Messaging\Attribute\ServiceActivator;
+use Ecotone\Modelling\Attribute\CommandHandler;
+use Ecotone\Modelling\Attribute\QueryHandler;
 use InvalidArgumentException;
 
 /**
@@ -48,7 +48,7 @@ class OrderService
         return $this->incorrectOrders;
     }
 
-    #[InternalHandler('incorrectOrders', endpointId: 'incorrectOrdersEndpoint')]
+    #[ServiceActivator('incorrectOrders', 'incorrectOrdersEndpoint')]
     public function storeIncorrectOrder(string $orderName): void
     {
         $this->incorrectOrders++;

@@ -15,7 +15,6 @@ use Ecotone\Messaging\Config\Container\Reference;
 use Ecotone\Messaging\Conversion\ConversionService;
 use Ecotone\Messaging\Support\Assert;
 use Ecotone\Messaging\Support\LicensingException;
-use Ecotone\Messaging\Support\MessageBuilder;
 
 /**
  * licence Apache-2.0
@@ -158,8 +157,8 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
     public function compile(MessagingContainerBuilder $builder): Definition
     {
         if ($this->batchPublishing || $this->nonBlockingConfirmation) {
-            if (! $builder->getBootstrapConfiguration()->isRunningForEnterprise()) {
-                throw LicensingException::create('High Throughput Publishing is available only with Ecotone Enterprise licence. See https://docs.ecotone.tech/enterprise for details.');
+            if (! $builder->getServiceConfiguration()->isRunningForEnterprise()) {
+                throw LicensingException::create('High Throughput Publishing is available only with Ecotone Enterprise licence.');
             }
         }
         if ($this->nonBlockingConfirmation) {
@@ -176,7 +175,6 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
 
         $outboundMessageConverter = new Definition(OutboundMessageConverter::class, [
             $this->headerMapper,
-            new Reference(MessageBuilder::class),
             $this->defaultConversionMediaType,
             $this->defaultDeliveryDelay,
             $this->defaultTimeToLive,
@@ -186,26 +184,23 @@ class AmqpOutboundChannelAdapterBuilder extends EnqueueOutboundChannelAdapterBui
 
         return new Definition(AmqpOutboundChannelAdapter::class, [
             $connectionFactory,
-            $this->declaresOnSend() ? new Reference(AmqpAdmin::REFERENCE_NAME) : new Definition(AmqpAdmin::class, factory: 'createEmpty'),
+            $this->autoDeclare ? new Reference(AmqpAdmin::REFERENCE_NAME) : new Definition(AmqpAdmin::class, factory: 'createEmpty'),
             $this->exchangeName,
             $this->defaultRoutingKey,
             $this->routingKeyFromHeader,
             $this->exchangeFromHeader,
             $this->defaultPersistentDelivery,
-            $this->declaresOnSend(),
+            $this->autoDeclare,
             $this->publisherConfirms,
             $outboundMessageConverter,
             new Reference(ConversionService::REFERENCE_NAME),
             Reference::to(AmqpTransactionInterceptor::class),
             new Reference(PendingDeliveryRegistry::class),
-            new Reference(MessageBuilder::class),
-            $this->delayStrategyReferenceName ? new Reference($this->delayStrategyReferenceName) : new Definition(HeadersExchangeDelayStrategy::class),
+            $this->delayStrategyReferenceName ? new Reference($this->delayStrategyReferenceName) : null,
             $this->batchPublishing,
             $this->nonBlockingConfirmation,
             $this->confirmationTimeout,
             $this->publishingChannelName ?? $this->exchangeName,
-            $this->requireExistingDestination,
-            $this->amqpConnectionFactoryReferenceName,
         ]);
     }
 }

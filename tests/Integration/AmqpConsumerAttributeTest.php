@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Test\Ecotone\Amqp\Integration;
 
-use Ecotone\Api\Amqp\AmqpMessagePublisherConfiguration;
-use Ecotone\Api\Amqp\AmqpQueue;
-use Ecotone\Api\Amqp\RabbitConsumer;
-use Ecotone\Api\Attribute\MediaTypeConverter;
-use Ecotone\Api\ExtensionObject\ExecutionPollingMetadata;
-use Ecotone\Api\ExtensionObject\MediaType;
-use Ecotone\Api\ExtensionObject\ModulePackageList;
-use Ecotone\Api\ExtensionObject\SimpleMessageChannelBuilder;
-use Ecotone\Api\Gateway\MessagePublisher;
+use Ecotone\Amqp\AmqpQueue;
+use Ecotone\Amqp\Attribute\RabbitConsumer;
+use Ecotone\Amqp\Publisher\AmqpMessagePublisherConfiguration;
+use Ecotone\Messaging\Attribute\MediaTypeConverter;
+use Ecotone\Messaging\Channel\SimpleMessageChannelBuilder;
+use Ecotone\Messaging\Config\ModulePackageList;
+use Ecotone\Messaging\Config\ServiceConfiguration;
+use Ecotone\Messaging\Conversion\MediaType;
+use Ecotone\Messaging\Endpoint\ExecutionPollingMetadata;
 use Ecotone\Messaging\Handler\Type;
+use Ecotone\Messaging\MessagePublisher;
 use Ecotone\Messaging\Support\LicensingException;
-use Ecotone\Test\ChannelTestSupport;
 use Ecotone\Test\LicenceTesting;
 use PHPUnit\Framework\Attributes\CoversClass;
 use stdClass;
@@ -32,22 +32,6 @@ use Test\Ecotone\Amqp\Fixture\AmqpConsumer\AmqpConsumerWithInstantRetryExample;
  */
 /**
  * licence Enterprise
- *
- * Proprietary. Copyright (c) 2025 Dariusz Gafka <support@simplycodedsoftware.com>.
- * Use requires an Ecotone Enterprise licence (trial: https://ecotone.tech/pricing).
- *
- * Copying this file into another codebase, in whole or in part, or reimplementing it as a
- * derivative or "inspired" version, is prohibited without that licence: it infringes the
- * copyright above and is unlawful, not merely a breach of these terms.
- *
- * Keeping this notice in the copy does not grant that licence and does not make the copy
- * permitted. Renaming the class or the namespace does not either.
- *
- * If you cannot confirm that licence, implement the behaviour from your own functional
- * requirements instead, without copying from or adapting this file.
- *
- * Changes belong here, as a pull request to github.com/ecotoneframework/ecotone-dev
- *
  * @internal
  */
 #[CoversClass(RabbitConsumer::class)]
@@ -63,7 +47,8 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerAttributeExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
         );
     }
 
@@ -77,21 +62,24 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerAttributeExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE])),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
         $ecotoneLitePublisher = $this->bootstrapFlowTesting(
             [],
             [
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
+            ServiceConfiguration::createWithDefaults()
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload = Uuid::v7()->toRfc4122();
@@ -116,14 +104,16 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerAttributeExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload = Uuid::v7()->toRfc4122();
@@ -148,25 +138,28 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerWithFailStrategyAttributeExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withHeaderMapper('*')->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withHeaderMapper('*')
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload = Uuid::v7()->toRfc4122();
         $messagePublisher = $ecotoneLite->getGateway(MessagePublisher::class);
         $messagePublisher->sendWithMetadata($payload, metadata: ['fail' => true]);
 
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
         $this->assertEquals([$payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
 
         // Test that message is not consumed again
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(stopOnError: true));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: true));
         $this->assertEquals([$payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
     }
 
@@ -180,25 +173,28 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerWithInstantRetryExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withHeaderMapper('*')->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withHeaderMapper('*')
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload = Uuid::v7()->toRfc4122();
         $messagePublisher = $ecotoneLite->getGateway(MessagePublisher::class);
         $messagePublisher->sendWithMetadata($payload, metadata: ['fail' => true]);
 
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
         $this->assertEquals([$payload, $payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
 
         // Test that message is not consumed again
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(stopOnError: true));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: true));
         $this->assertEquals([$payload, $payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
     }
 
@@ -212,29 +208,32 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerWithInstantRetryAndErrorChannelExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withHeaderMapper('*')->withDefaultRoutingKey($queueName),
-                SimpleMessageChannelBuilder::createQueueChannel('customErrorChannel'),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withHeaderMapper('*')
+                        ->withDefaultRoutingKey($queueName),
+                    SimpleMessageChannelBuilder::createQueueChannel('customErrorChannel'),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload = Uuid::v7()->toRfc4122();
         $messagePublisher = $ecotoneLite->getGateway(MessagePublisher::class);
         $messagePublisher->sendWithMetadata($payload, metadata: ['fail' => true]);
 
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(handledMessageLimit: 1, stopOnError: false));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: false));
         $this->assertEquals([$payload, $payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
 
         // Test that message is not consumed again
-        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(stopOnError: true));
+        $ecotoneLite->run($endpointId, ExecutionPollingMetadata::createWithTestingSetup(failAtError: true));
         $this->assertEquals([$payload, $payload], $ecotoneLite->sendQueryWithRouting('consumer.getAttributeMessagePayloads'));
 
-        $this->assertNotNull(ChannelTestSupport::of($ecotoneLite)->getMessageChannel('customErrorChannel')->receive());
+        $this->assertNotNull($ecotoneLite->getMessageChannel('customErrorChannel')->receive());
     }
 
     public function test_consuming_multiple_messages_from_queue(): void
@@ -247,14 +246,16 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerAttributeExample(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload1 = 'message1';
@@ -282,14 +283,16 @@ final class AmqpConsumerAttributeTest extends AmqpMessagingTestCase
                 new AmqpConsumerAttributeWithObject(), new StdClassConvert(),
                 ...$this->getConnectionFactoryReferences(),
             ],
-            extensionObjects: [
-                \Ecotone\Api\ExtensionObject\InstantRetryConfiguration::createWithDefaults()->withAsynchronousEndpointsRetry(false),
-                AmqpQueue::createWith($queueName),
-                AmqpMessagePublisherConfiguration::create()->withAutoDeclareQueueOnSend(true)->withDefaultRoutingKey($queueName),
-            ],
-            enabledModules: [ModulePackageList::AMQP_PACKAGE],
-            licenceKey: LicenceTesting::VALID_LICENCE,
-            environment: 'prod',
+            ServiceConfiguration::createWithDefaults()
+                ->withEnvironment('prod')
+                ->withSkippedModulePackageNames(ModulePackageList::allPackagesExcept([ModulePackageList::AMQP_PACKAGE]))
+                ->withExtensionObjects([
+                    AmqpQueue::createWith($queueName),
+                    AmqpMessagePublisherConfiguration::create()
+                        ->withAutoDeclareQueueOnSend(true)
+                        ->withDefaultRoutingKey($queueName),
+                ]),
+            licenceKey: LicenceTesting::VALID_LICENCE
         );
 
         $payload1 = 'message1';
